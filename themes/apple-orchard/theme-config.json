@@ -1,0 +1,37 @@
+{
+  "id": "apple-orchard",
+  "name": "Apple Orchard",
+  "version": "1.0.0",
+  "tagline": "A sweet start to the day.",
+  "assets": {
+    "background": "background.png",
+    "waitingPiece": "waiting-apple.png",
+    "herePiece": "basket-apple.png",
+    "thumbnail": "thumbnail.png"
+  },
+  "basket": {
+    "frontMask": [
+      {"x":50.63,"y":61.47},{"x":55.31,"y":66.28},{"x":59.38,"y":69.29},{"x":64.22,"y":70.94},
+      {"x":69.38,"y":71.09},{"x":75.31,"y":71.39},{"x":80.23,"y":71.09},{"x":84.69,"y":70.04},
+      {"x":89.22,"y":67.48},{"x":91.41,"y":65.83},{"x":94.38,"y":63.58},{"x":96.09,"y":60.72}
+    ],
+    "pile": [
+      {"x":50,"y":84,"r":-4},{"x":39,"y":82,"r":3},{"x":61,"y":82,"r":-2},{"x":32,"y":80,"r":4},{"x":68,"y":79,"r":-3},{"x":25,"y":77,"r":2},{"x":75,"y":77,"r":-4},
+      {"x":45,"y":72,"r":2},{"x":56,"y":71,"r":-3},{"x":34,"y":70,"r":4},{"x":67,"y":69,"r":-2},{"x":27,"y":67,"r":3},{"x":73,"y":67,"r":-4},
+      {"x":50,"y":61,"r":3},{"x":39,"y":60,"r":-3},{"x":61,"y":59,"r":4},{"x":32,"y":57,"r":-2},{"x":68,"y":56,"r":3},{"x":25,"y":54,"r":-4},{"x":75,"y":54,"r":2},
+      {"x":45,"y":49,"r":-3},{"x":56,"y":48,"r":4},{"x":34,"y":46,"r":-2},{"x":67,"y":45,"r":3},{"x":28,"y":43,"r":-4},{"x":72,"y":42,"r":2},
+      {"x":50,"y":36,"r":4},{"x":40,"y":34,"r":-3},{"x":60,"y":33,"r":2},{"x":50,"y":25,"r":-2}
+    ],
+    "zoneTransform": {"xPx":20,"yPx":-50,"scale":1.38}
+  },
+  "counters": {
+    "here": {"xPx":-4,"yPx":0},
+    "waiting": {"xPx":-8,"yPx":5}
+  },
+  "behavior": {
+    "waitingSlotsStable": true,
+    "herePileOrder": "check-in-order",
+    "showNameWhileWaiting": true,
+    "showNameWhenHere": false
+  }
+}

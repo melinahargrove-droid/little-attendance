@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Little Attendance v4</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+
+<section id="dashboard" class="screen active">
+  <div class="dashboard-stage" aria-label="Little Attendance dashboard">
+    <button id="takeHotspot" class="hotspot" aria-label="Take Attendance">Take Attendance</button>
+    <button id="classHotspot" class="hotspot" aria-label="My Classroom">My Classroom</button>
+    <button id="teacherHotspot" class="hotspot" aria-label="Teacher Mode">Teacher Mode</button>
+  </div>
+</section>
+
+
+<section id="classroom" class="screen">
+  <div class="classroom-shell">
+    <aside class="classroom-sidebar">
+      <div class="mini-brand real-brand classroom-brand">
+        <img id="classroomLogoMirror" alt="One Little Teacher">
+        <div class="mini-brand-tag">Big days start here.</div>
+      </div>
+
+      <nav class="theme-nav classroom-nav">
+        <button class="theme-nav-item" id="classroomHome">⌂ <span>Home</span></button>
+        <button class="theme-nav-item active">♡ <span>My Classroom</span></button>
+        <button class="theme-nav-item" id="classroomAttendance">◉ <span>Take Attendance</span></button>
+        <button class="theme-nav-item" id="classroomTeacher">⚙ <span>Teacher Mode</span></button>
+      </nav>
+
+      <div class="sidebar-note classroom-note">
+        <div class="sidebar-note-heart">♡</div>
+        Set it up once.<br><strong>Use it every morning.</strong>
+      </div>
+    </aside>
+
+    <main class="classroom-main">
+      <header class="classroom-header">
+        <div>
+          <div class="eyebrow">My Classroom</div>
+          <h1>Our Classroom</h1>
+          <p>Set up your class once, then let Little Attendance do the rest.</p>
+        </div>
+        <div class="autosave-pill"><span class="autosave-dot"></span><span id="autosaveText">Saved automatically</span></div>
+      </header>
+
+      <section class="classroom-overview">
+        <div class="class-name-card">
+          <div class="card-icon school-icon">♡</div>
+          <div class="grow">
+            <label for="className" class="mini-label">Classroom name</label>
+            <input id="className" class="class-name-input" placeholder="" aria-label="Classroom name">
+            <div class="small">This appears at the top of your attendance board.</div>
+          </div>
+        </div>
+
+        <div class="current-theme-card">
+          <div class="current-theme-art" id="currentThemeArt"></div>
+          <div class="current-theme-copy">
+            <div class="mini-label">Current theme</div>
+            <h2 id="currentThemeName">School Bus</h2>
+            <p id="currentThemeTag">Good friends. Brighter days.</p>
+            <button class="secondary compact" id="browseThemes">Change Theme</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="friends-section">
+        <div class="friends-heading">
+          <div>
+            <div class="eyebrow">Friends</div>
+            <h2>Your class list</h2>
+            <p><span id="friendCount">0</span> of 30 friends</p>
+          </div>
+          <button class="primary add-friend-btn" id="addFriendBtn">+ Add a Friend</button>
+        </div>
+
+        <div id="friendGrid" class="friend-grid"></div>
+
+        <div id="friendEmpty" class="friend-empty">
+          <div class="empty-friends-art">♡</div>
+          <h3>Your classroom is ready for friends.</h3>
+          <p>Add each child once. Their names will stay here and appear on your attendance themes.</p>
+          <button class="primary" id="addFirstFriendBtn">+ Add Your First Friend</button>
+        </div>
+      </section>
+
+      <section class="classroom-bottom">
+        <div class="classroom-tip">
+          <strong>Tip:</strong> Use the arrows on each friend card to arrange names in any order you like.
+        </div>
+        <button class="secondary" id="classBack">← Back Home</button>
+      </section>
+    </main>
+  </div>
+</section>
+
+<dialog id="friendDialog">
+  <form method="dialog" class="modal friend-modal" id="friendForm">
+    <div class="eyebrow" id="friendDialogEyebrow">Add a Friend</div>
+    <h2 id="friendDialogTitle">Who's joining your classroom?</h2>
+    <p>Enter the name exactly how you want it to appear on the attendance board.</p>
+    <label for="friendName">Friend's name</label>
+    <input id="friendName" maxlength="40" autocomplete="off" placeholder="Name">
+    <div class="friend-preview-wrap">
+      <div class="friend-avatar preview-avatar" id="friendPreviewAvatar">♡</div>
+      <div>
+        <div class="mini-label">Preview</div>
+        <strong id="friendPreviewName">Friend</strong>
+      </div>
+    </div>
+    <div class="actions friend-dialog-actions">
+      <button type="button" class="secondary" id="cancelFriend">Cancel</button>
+      <button type="submit" class="primary" id="saveFriend">Add Friend</button>
+    </div>
+  </form>
+</dialog>
+
+
+<section id="themes" class="screen">
+  <div class="themes-shell">
+    <aside class="themes-sidebar">
+      <div class="mini-brand real-brand">
+        <img src="" alt="One Little Teacher">
+        <div class="mini-brand-tag">Big days start here.</div>
+      </div>
+      <nav class="theme-nav">
+        <button class="theme-nav-item" id="themesHome">⌂ <span>Home</span></button>
+        <button class="theme-nav-item active">♡ <span>My Classroom</span></button>
+        <button class="theme-nav-item" id="themesAttendance">◉ <span>Take Attendance</span></button>
+        <button class="theme-nav-item" id="themesTeacher">⚙ <span>Teacher Mode</span></button>
+      </nav>
+      <div class="sidebar-note"><div class="sidebar-note-heart">♡</div>Same little routine.<br><strong>A whole new adventure.</strong></div>
+    </aside>
+    <main class="themes-main">
+      <header class="themes-header">
+        <div><div class="eyebrow">My Classroom</div><h1>Themes</h1><p>Make attendance feel a little more magical.</p></div>
+        <button class="secondary" id="themesBack">← Back to My Classroom</button>
+      </header>
+      <div class="themes-tools">
+        <div id="filters" class="filters"></div>
+        <div class="searchbox-wrap"><span class="search-icon">⌕</span><input id="themeSearch" placeholder="Search themes…"><button id="clearThemeSearch" class="search-clear">Clear</button></div>
+      </div>
+      <div class="installbar polished">
+        <div class="install-copy"><div class="install-icon">+</div><div><strong>Already purchased another theme?</strong><div class="small">Add the theme pack here to unlock it in your library.</div></div></div>
+        <button id="addPurchasedTheme" class="primary">Add Purchased Theme</button>
+      </div>
+      <div id="themeGrid" class="theme-grid pretty-grid"></div>
+    </main>
+  </div>
+</section>
+
+<section id="fallLeavesAttendance" class="screen">
+  <div class="fall-la-viewport">
+    <div id="fallLeavesBoard" class="fall-la-board" aria-label="Fall Leaves attendance board">
+      <div class="fall-la-count here" id="fallHereCount">0</div>
+      <div class="fall-la-count waiting" id="fallWaitingCount">0</div>
+      <div class="fall-la-zone" id="fallLeavesZone"></div>
+      <button class="fall-la-close" id="fallLeavesClose" aria-label="Close attendance">Close</button>
+    </div>
+  </div>
+</section>
+
+<section id="attendance" class="screen">
+  <div class="att-wrap">
+    <div class="topbar">
+      <button id="homeBtn" class="secondary">Home</button>
+      <div class="right"><button id="teacherBtn" class="secondary">Teacher Mode</button></div>
+    </div>
+    <div class="att-head">
+      <div>
+        <div class="eyebrow" id="classLabel">Little Attendance</div>
+        <h1>Who’s Here Today?</h1>
+        <p style="margin:0">Tap your name when you arrive.</p>
+      </div>
+      <div class="counts">
+        <div class="count"><b id="hereCount">0</b><span>Here</span></div>
+        <div class="count"><b id="waitingCount">0</b><span>Not here yet</span></div>
+      </div>
+    </div>
+    <div id="studentGrid" class="grid"></div>
+  </div>
+</section>
+
+<dialog id="teacherDialog">
+  <div class="modal">
+    <div class="eyebrow">Teacher Mode</div>
+    <h2>Attendance controls</h2>
+    <div class="actions">
+      <button id="undoBtn" class="secondary">Undo</button>
+      <button id="resetBtn" class="danger">Reset</button>
+      <button id="fullscreenBtn" class="secondary">Full Screen</button>
+    </div>
+    <div class="actions" style="justify-content:flex-end">
+      <button id="closeTeacher" class="primary">Done</button>
+    </div>
+  </div>
+</dialog>
+
+<input id="themeFile" type="file" accept=".littletheme,.json" hidden>
+
+<div id="toast" class="toast"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
