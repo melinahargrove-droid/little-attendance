@@ -147,6 +147,7 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
   margin:0 auto 10px;
 }
 .real-brand{padding-top:4px}
+.mini-brand-name{max-width:188px;margin:0 auto 10px;font:700 24px/1.15 Georgia,serif;color:#123858}
 
 
 .pretty-grid .theme-art img,

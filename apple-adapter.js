@@ -16,7 +16,7 @@ function initials(n){const p=String(n||'').trim().split(/\s+/);return(p.length>1
 function ensureScreen(){
  if(document.getElementById('appleAttendance'))return;
  const s=document.createElement('section');s.id='appleAttendance';s.className='screen';
- s.innerHTML=`<div class="apple-la-stage"><img class="apple-la-bg" src="${BASE}background.png" alt=""><div class="apple-la-wait" id="appleWaitLayer"></div><div class="apple-la-here" id="appleHereLayer"></div><img class="apple-la-front" src="${BASE}background.png" alt=""><div class="apple-la-count apple-la-here-count" id="appleHereCount">0</div><div class="apple-la-count apple-la-wait-count" id="appleWaitCount">0</div><button class="apple-la-close" id="appleClose" aria-label="Close attendance"></button><div class="apple-la-tools"><button id="appleTeacher">Attendance Controls</button></div></div>`;
+ s.innerHTML=`<div class="apple-la-stage"><img class="apple-la-bg" src="${BASE}background.png" alt=""><div class="apple-la-wait" id="appleWaitLayer"></div><div class="apple-la-here" id="appleHereLayer"></div><img class="apple-la-front" src="${BASE}background.png" alt=""><div class="apple-la-count apple-la-here-count" id="appleHereCount">0</div><div class="apple-la-count apple-la-wait-count" id="appleWaitCount">0</div><button class="apple-la-close" id="appleClose" aria-label="Close attendance"><span class="apple-la-close-label" aria-hidden="true">Close</span></button><div class="apple-la-tools"><button id="appleTeacher">Attendance Controls</button></div></div>`;
  document.querySelector('.app').appendChild(s);
  document.getElementById('appleClose').onclick=()=>show('dashboard');
  document.getElementById('appleTeacher').onclick=()=>document.getElementById('teacherDialog').showModal();

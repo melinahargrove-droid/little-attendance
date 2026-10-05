@@ -601,10 +601,6 @@ function renderClassroom(){
   $("#className").value=data.className||"";
   renderCurrentTheme();
   renderFriends();
-  // Mirror the already-embedded real logo from the Themes sidebar.
-  const source=document.querySelector(".themes-sidebar .real-brand img");
-  const target=$("#classroomLogoMirror");
-  if(source&&target&&!target.src)target.src=source.src;
 }
 function openFriendDialog(id=null){
   if($("#friendDialog").open)return;
@@ -967,8 +963,6 @@ load();
 setupAttendanceDays();
 requestEditingLock();
 renderThemeFilters();
-const _themeLogo=document.querySelector(".themes-sidebar .real-brand img");
-if(_themeLogo && $("#classroomLogoMirror")) $("#classroomLogoMirror").src=_themeLogo.src;
 
 // Keep named navigation available while the approved artwork loads or if it fails.
 const dashboardArt=new Image();

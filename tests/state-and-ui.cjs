@@ -33,6 +33,17 @@ function create(saved=fixture(),options={}){
  return {w,d,run,store,node:selector=>d.querySelector(selector),state:()=>JSON.parse(run('JSON.stringify(data)')),failWrite:value=>{failWrite=value},failRead:value=>{failRead=value}};
 }
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+test('sidebar brand has readable text instead of empty image sources or image mirroring',()=>{
+ const a=create();a.run('renderClassroom()');
+ assert.equal(a.d.querySelectorAll('.real-brand img').length,0);
+ assert.deepEqual([...a.d.querySelectorAll('.mini-brand-name')].map(node=>node.textContent),['One Little Teacher','One Little Teacher']);
+ assert.equal(a.d.querySelector('img[src=""]'),null);
+});
+test('Apple Close has a visible fallback label without changing navigation state',async()=>{
+ const a=create(fixture({selectedTheme:'apple-orchard'}));a.run('openAttendance()');await settle();
+ const before=a.state();assert.equal(a.node('#appleClose').textContent,'Close');assert.equal(a.node('#appleClose').getAttribute('aria-label'),'Close attendance');
+ a.node('#appleClose').click();assert.ok(a.node('#dashboard').classList.contains('active'));assert.deepEqual(a.state(),before);
+});
 function edit(a,name,id=null){a.run(`openFriendDialog(${JSON.stringify(id)})`);a.node('#friendName').value=name;a.node('#friendForm').dispatchEvent(new a.w.Event('submit',{cancelable:true}));}
 function namesHere(a){const s=a.state();return s.roster.filter(child=>s.present.includes(child.id)).map(child=>child.name).sort();}
 

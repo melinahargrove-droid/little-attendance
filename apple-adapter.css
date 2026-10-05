@@ -3,3 +3,8 @@
 .apple-la-wait,.apple-la-here{pointer-events:none}
 .apple-la-piece{pointer-events:auto}
 .apple-la-piece:focus-visible{outline:3px solid #173f72;outline-offset:4px}
+/* Preserve the original hotspot and artwork. A named control remains visible
+   when cover-cropping removes the X painted into the background. */
+.apple-la-close-label{position:absolute;inset:8px 4px auto;min-height:44px;display:grid;place-items:center;border:1.5px solid #789fc0;border-radius:999px;background:rgba(255,250,240,.96);color:#173f72;font:900 14px "Trebuchet MS",Arial,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.12)}
+.apple-la-close:focus-visible{outline:3px solid #173f72;outline-offset:-4px}
+@media(min-aspect-ratio:7/4) and (max-aspect-ratio:9/5){.apple-la-close-label{display:none}}
