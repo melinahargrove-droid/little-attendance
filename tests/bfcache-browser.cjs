@@ -8,8 +8,8 @@ const fixture=()=>({schemaVersion:2,attendanceDay:null,attendanceRecordId:'undat
 const server=http.createServer((req,res)=>{const file=path.resolve(root,decodeURIComponent(new URL(req.url,'http://localhost').pathname).replace(/^\/+/,'' )||'index.html');if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}try{res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.json':'application/json'})[path.extname(file)]||'text/plain');res.end(fs.readFileSync(file));}catch{res.writeHead(404).end();}});
 (async()=>{
  fs.mkdirSync(out,{recursive:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=process.env.TARGET_URL||('http://127.0.0.1:'+server.address().port+'/');if(process.env.TARGET_URL)assert.equal(url,'https://melinahargrove-droid.github.io/little-attendance/');
- const browser=await chromium.launch({headless:true,ignoreDefaultArgs:['--disable-back-forward-cache']});
- const report={browser:await browser.version(),url,removedDefaultArgs:['--disable-back-forward-cache'],requestInterception:false,cases:[]};
+ const browser=await chromium.launch({headless:true,channel:'chromium',ignoreDefaultArgs:['--disable-back-forward-cache']});
+ const report={browser:await browser.version(),channel:'chromium',url,removedDefaultArgs:['--disable-back-forward-cache'],requestInterception:false,cases:[]};
  const record=()=>fs.writeFileSync(path.join(out,'bfcache-probe.json'),JSON.stringify(report,null,2));
  const state=p=>p.evaluate(()=>JSON.parse(JSON.stringify(data))),raw=p=>p.evaluate(k=>localStorage.getItem(k),KEY);
  const settled=p=>p.waitForFunction(()=>!['pending','requesting'].includes(editingLockState));
