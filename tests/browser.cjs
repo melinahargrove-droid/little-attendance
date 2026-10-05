@@ -75,7 +75,7 @@ const server=http.createServer((req,res)=>{
  });
  await scenario('Apple Orchard tap coverage at audited and tablet landscape sizes',async(page)=>{
   for(const viewport of [{width:1181,height:757},{width:1024,height:768}]){
-   await page.setViewportSize(viewport);await seed(page,fixture({selectedTheme:'apple-orchard',roster:Array.from({length:30},(_,i)=>'QA Tap '+i),present:[],history:[]}));await page.locator('#takeHotspot').click();await page.locator('#appleWaitLayer button').first().waitFor();await page.screenshot({path:path.join(out,'apple-'+viewport.width+'-waiting.png')});
+   await page.setViewportSize(viewport);await seed(page,fixture({selectedTheme:'apple-orchard',roster:Array.from({length:30},(_,i)=>'QA Tap '+i),present:[],history:[]}));await page.locator('#takeHotspot').click();await page.locator('#appleWaitLayer button').first().waitFor();await page.locator('.apple-la-bg').evaluate(image=>image.decode());await page.evaluate(async()=>{const image=new Image();image.src='themes/apple-orchard/waiting-apple.png';await image.decode();});await page.screenshot({path:path.join(out,'apple-'+viewport.width+'-waiting.png')});
    for(let i=0;i<30;i++){await page.getByRole('button',{name:'Mark here QA Tap '+i,exact:true}).click();await page.getByRole('button',{name:'Return QA Tap '+i,exact:true}).waitFor();assert.equal((await state(page)).present.length,i+1);}
    await page.screenshot({path:path.join(out,'apple-'+viewport.width+'-here.png')});
   }
