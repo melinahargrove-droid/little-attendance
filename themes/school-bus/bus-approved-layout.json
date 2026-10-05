@@ -1,0 +1,10 @@
+{
+  "sourceBuild":"Little-Classroom-0.15.77-FINAL-Attendance-Bus",
+  "status":"approved-locked",
+  "waiting":{"xPx":-10,"yPx":-15,"scale":0.95},
+  "counters":{"here":{"xPx":-5,"yPx":35},"notHereYet":{"xPx":0,"yPx":35}},
+  "busWindowOverlay":{"topPercent":36.1,"heightPercent":20.188,"xPx":0,"yPx":15},
+  "busKidsArea":{"heightPercent":100,"xPx":0,"yPx":0},
+  "arrivedDensity":{"1-6":{"columns":6,"rows":1,"photoPx":72},"7-12":{"columns":6,"rows":2,"photoPx":54},"13-16":{"columns":8,"rows":2,"photoPx":50},"17-20":{"columns":10,"rows":2,"photoPx":44},"21-24":{"columns":8,"rows":3,"photoPx":36},"25-27":{"columns":9,"rows":3,"photoPx":34},"28-30":{"columns":10,"rows":3,"photoPx":31}},
+  "arrivedNamesVisible":false
+}

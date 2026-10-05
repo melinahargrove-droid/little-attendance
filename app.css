@@ -505,6 +505,10 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
 /* Bulk roster entry stays separate from saved classroom data until Add. */
 .friends-heading{flex-wrap:wrap}
 .friend-add-actions{display:flex;gap:10px;flex-wrap:wrap}
+#pasteListDialog{max-height:calc(100dvh - 32px);overflow:hidden}
+.paste-list-modal{display:flex;flex-direction:column;max-height:calc(100dvh - 32px);padding:0}
+.paste-list-content{overflow:auto;overscroll-behavior:contain;min-height:0;padding:30px}
+.paste-list-modal .actions{flex:none;margin:0;padding:16px 30px;border-top:1px solid var(--line)}
 .paste-list-modal h2{font-size:30px;margin:0 0 12px}
 .paste-list-modal p{line-height:1.45}
 .paste-list-modal label{display:block;font-weight:700;margin-bottom:8px}
@@ -522,7 +526,8 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
 .paste-list-modal [hidden]{display:none}
 #savePasteList:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:450px){
-  .paste-list-modal{padding:22px 18px}
+  .paste-list-content{padding:22px 18px}
+  .paste-list-modal .actions{padding:14px 18px}
   .paste-list-modal h2{font-size:26px}
   .paste-list-modal .actions button{flex:1}
 }

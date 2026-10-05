@@ -12,7 +12,7 @@ let data={
 };
 
 const themeCatalog=[
-{id:"school-bus",name:"School Bus",category:"Everyday",tag:"Good friends. Brighter days.",emoji:"🚌",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/school-bus.png"},
+{id:"school-bus",name:"School Bus",category:"Everyday",tag:"Good friends. Brighter days.",emoji:"🚌",thumb:"themes/school-bus/background.png"},
 {id:"apple-orchard",name:"Apple Orchard",category:"Fall",tag:"A sweet start to the day.",emoji:"🍎",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/shared/attendance-themes/apple-orchard/thumbnail.png"},
 {id:"pumpkin-patch",name:"Pumpkin Patch",category:"Fall",tag:"Fall friends. Bright beginnings.",emoji:"🎃",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/pumpkin-patch.png"},
 {id:"fall-leaves",name:"Fall Leaves",category:"Fall",tag:"Watch our friendship pile grow!",emoji:"🍂",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-leaves.png"},

@@ -35,6 +35,22 @@ including two children who share a name. Nothing is uploaded by pasting a list.
 If browser storage fails, the added friends remain in the current session with
 a visible **Not saved** warning; keep the tab open until saving works again.
 
+## School Bus and Attendance Controls
+
+School Bus uses the recovered standalone artwork and its approved layout.
+Waiting friends show their name and initials (or an existing embedded photo).
+Arriving friends move into a fixed place on the bus; other friends stay put.
+The scene uses the existing stable-ID attendance and undo state. Original art
+and the locked layout JSON are byte-preserved; see `themes/school-bus/README.md`.
+Landscape classroom displays are the primary layout. Portrait captures are
+included in browser evidence but do not constitute phone usability certification.
+
+The former **Teacher Mode** buttons now read **Attendance Controls**. They still
+open Undo, Reset and Full Screen. This is a daily-controls menu, not a protected
+teacher account or security boundary. The home artwork is unchanged; a scoped
+HTML label replaces its old title visually and provides the matching accessible
+name, with visible controls retained if artwork cannot load.
+
 ## Saved-classroom upgrade
 
 This repair retains `littleAttendanceCleanV4` as the browser storage key.

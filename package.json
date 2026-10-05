@@ -3,9 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "node --test tests/state-and-ui.cjs",
+    "test": "node --test tests/state-and-ui.cjs tests/bus-state-and-ui.cjs",
     "test:browser": "node tests/browser.cjs",
-    "check": "node --check app.js && node --check apple-adapter.js && npm test"
+    "check": "node --check app.js && node --check apple-adapter.js && node --check bus-adapter.js && npm test"
   },
-  "devDependencies": { "jsdom": "26.1.0", "playwright": "1.58.2" }
+  "devDependencies": {
+    "jsdom": "26.1.0",
+    "playwright": "1.58.2"
+  }
 }

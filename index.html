@@ -6,6 +6,7 @@
 <title>Little Attendance v4</title>
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="apple-adapter.css">
+<link rel="stylesheet" href="bus-adapter.css">
 </head>
 <body>
 <div class="app">
@@ -128,6 +129,7 @@
 
 <dialog id="pasteListDialog" aria-labelledby="pasteListTitle" aria-describedby="pasteListHelp">
   <form class="modal paste-list-modal" id="pasteListForm">
+    <div class="paste-list-content">
     <div class="eyebrow">Your class list</div>
     <h2 id="pasteListTitle">Paste a list of friends</h2>
     <p id="pasteListHelp">Put one name on each line, then review the preview. These friends will be added to your class. Existing names and attendance will stay as they are.</p>
@@ -144,6 +146,7 @@
       <input type="checkbox" id="confirmDuplicateNames">
       <span>I reviewed the matching names marked above. Add each line as a separate friend.</span>
     </label>
+    </div>
     <div class="actions friend-dialog-actions">
       <button type="button" class="secondary" id="cancelPasteList">Cancel</button>
       <button type="submit" class="primary" id="savePasteList" disabled>Add to class</button>
@@ -239,5 +242,6 @@
 
 <script src="app.js"></script>
 <script src="apple-adapter.js"></script>
+<script src="bus-adapter.js"></script>
 </body>
 </html>
