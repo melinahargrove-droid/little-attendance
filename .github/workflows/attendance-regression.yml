@@ -40,4 +40,41 @@ jobs:
         if: always()
         with:
           name: attendance-${{ matrix.browser }}-${{ github.sha }}
-          path: test-results/
+          path: |
+            test-results/**
+            !test-results/bus-*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bus-1671-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/bus-1671-*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bus-1280-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/bus-1280-*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bus-1181-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/bus-1181-*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bus-1024-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/bus-1024-*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bus-portrait-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/bus-portrait-*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bus-readable-1280-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/bus-readable-1280-*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bus-readable-1024-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/bus-readable-1024-*.png

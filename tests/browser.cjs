@@ -19,7 +19,7 @@ const server=http.createServer((req,res)=>{
  if(process.env.TARGET_URL){
   assert.equal(url,'https://melinahargrove-droid.github.io/little-attendance/','Only the approved existing app may be live-tested');
   const crypto=require('node:crypto'),proof=[];
-  for(const file of ['index.html','app.js','app.css','apple-adapter.js','apple-adapter.css','assets/home-approved.png','themes/apple-orchard/background.png','themes/apple-orchard/basket-apple.png','themes/apple-orchard/waiting-apple.png','themes/apple-orchard/thumbnail.png','themes/apple-orchard/theme-config.json']){
+  for(const file of ['index.html','app.js','app.css','apple-adapter.js','apple-adapter.css','bus-adapter.js','bus-adapter.css','themes/school-bus/background.png','themes/school-bus/bus-approved-layout.json','assets/home-approved.png','themes/apple-orchard/background.png','themes/apple-orchard/basket-apple.png','themes/apple-orchard/waiting-apple.png','themes/apple-orchard/thumbnail.png','themes/apple-orchard/theme-config.json']){
    const response=await fetch(url+file);assert.equal(response.status,200,file);
    const live=Buffer.from(await response.arrayBuffer()),expected=fs.readFileSync(path.join(root,file));
    const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
@@ -35,13 +35,20 @@ const server=http.createServer((req,res)=>{
  const state=page=>page.evaluate(()=>JSON.parse(JSON.stringify(data)));
  const namesHere=async page=>{const s=await state(page);return s.roster.filter(c=>s.present.includes(c.id)).map(c=>c.name).sort();};
  try{
+ await require('./bus-browser.cjs')({scenario,seed,state,out});
+ await require('./bus-label-review.cjs')({scenario,seed,state,out});
  await scenario('approved home art, three controls, keyboard, navigation and resize',async(page)=>{
   await seed(page,fixture());const image=await page.locator('.dashboard-stage').evaluate(async el=>{const css=getComputedStyle(el).backgroundImage;const img=new Image();img.src=css.slice(5,-2);await img.decode();return{width:img.naturalWidth,height:img.naturalHeight};});assert.deepEqual(image,{width:1920,height:1080});
-  await page.screenshot({path:path.join(out,'home-desktop.png')});
+  assert.equal(await page.locator('#teacherHotspot').getAttribute('aria-label'),'Attendance Controls');assert.notEqual(await page.locator('.dashboard-control-label').evaluate(e=>getComputedStyle(e).color),'rgba(0, 0, 0, 0)');await page.screenshot({path:path.join(out,'home-desktop.png')});
   await page.getByRole('button',{name:'My Classroom',exact:true}).click();assert.equal(await page.locator('#classroom').evaluate(e=>e.classList.contains('active')),true);
-  await page.locator('#classBack').click();await page.locator('#takeHotspot').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#attendance.active').count(),1);
-  await page.locator('#homeBtn').click();await page.locator('#teacherHotspot').click();assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),true);await page.locator('#closeTeacher').click();
-  await page.setViewportSize({width:768,height:1024});await page.screenshot({path:path.join(out,'home-portrait.png')});await page.locator('#classHotspot').click();assert.equal(await page.locator('#classroom.active').count(),1);
+  await page.locator('#classBack').click();await page.locator('#takeHotspot').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#busAttendance.active').count(),1);
+  await page.locator('#busClose').click();await page.locator('#teacherHotspot').click();assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),true);await page.locator('#closeTeacher').click();
+  for(const viewport of [{width:768,height:1024},{width:390,height:844},{width:320,height:568}]){
+   await page.setViewportSize(viewport);await page.screenshot({path:path.join(out,'home-'+viewport.width+'.png')});
+   const label=await page.locator('.dashboard-control-label').evaluate(e=>({width:e.clientWidth,scroll:e.scrollWidth}));assert.ok(label.scroll<=label.width+1,'Attendance Controls title fits the home artwork');
+   await page.locator('#teacherHotspot').click();assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),true);await page.locator('#closeTeacher').click();
+  }
+  await page.locator('#classHotspot').click();assert.equal(await page.locator('#classroom.active').count(),1);
  });
  await scenario('home remains visibly usable when approved artwork cannot load',async(page,context)=>{
   await context.route('**/assets/home-approved.png',route=>route.abort());await seed(page,fixture());assert.equal(await page.locator('.dashboard-stage').evaluate(e=>e.classList.contains('art-ready')),false);for(const id of ['takeHotspot','classHotspot','teacherHotspot'])assert.notEqual(await page.locator('#'+id).evaluate(e=>getComputedStyle(e).color),'rgba(0, 0, 0, 0)');await page.screenshot({path:path.join(out,'home-art-fallback.png')});await page.locator('#classHotspot').click();assert.equal(await page.locator('#classroom.active').count(),1);
@@ -55,6 +62,36 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.evaluate(key=>localStorage.getItem(key),BACKUP),original);
   await page.reload();await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha Renamed']);await page.locator('#closeTeacher').click();
   await page.locator('#classHotspot').click();await page.locator('#className').fill('QA Immediate Reload');await page.reload();assert.equal((await state(page)).className,'QA Immediate Reload');
+ });
+ await scenario('paste list preview, cancel, Escape, append, duplicates, reload and undo',async(page)=>{
+  const old=fixture();await seed(page,old);const raw=JSON.stringify(old),before=await state(page);await page.locator('#classHotspot').click();
+  await page.getByRole('button',{name:'Paste a list',exact:true}).click();await page.locator('#pastedNames').fill("QA Renée\nQA O’Neil\nQA Anne-Marie");
+  assert.equal(await page.locator('#pasteListPreview li').count(),3);assert.deepEqual(await state(page),before);assert.equal(await page.evaluate(key=>localStorage.getItem(key),KEY),raw);
+  await page.locator('#cancelPasteList').click();assert.deepEqual(await state(page),before);assert.equal(await page.locator('#pasteListBtn').evaluate(e=>e===document.activeElement),true);
+  await page.locator('#pasteListBtn').click();assert.equal(await page.locator('#pastedNames').inputValue(),'');await page.locator('#pastedNames').fill('QA Escape');await page.keyboard.press('Escape');assert.deepEqual(await state(page),before);
+  await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill("  QA Renée\n\nQA O’Neil\nQA Anne-Marie  ");await page.keyboard.press('Tab');assert.equal(await page.locator('#cancelPasteList').evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Tab');assert.equal(await page.locator('#savePasteList').evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Enter');
+  const added=await state(page);assert.deepEqual(added.roster.slice(0,3),before.roster);assert.deepEqual(added.present,before.present);assert.deepEqual(added.history,before.history);assert.equal(added.roster.length,6);assert.equal(new Set(added.roster.map(c=>c.id)).size,6);assert.equal(await page.evaluate(key=>localStorage.getItem(key),BACKUP),raw);
+  await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('QA Alpha\nQA Same\nQA Same');assert.equal(await page.locator('#savePasteList').isDisabled(),true);assert.equal(await page.locator('#pasteListPreview small').count(),3);
+  await page.screenshot({path:path.join(out,'paste-duplicate-review.png')});await page.locator('#confirmDuplicateNames').check();await page.locator('#savePasteList').click();assert.equal((await state(page)).roster.length,9);assert.equal(new Set((await state(page)).roster.map(c=>c.id)).size,9);
+  await page.reload();assert.equal((await state(page)).roster.length,9);await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha']);
+ });
+ await scenario('paste list responsive preview, long names, limits and literal text',async(page)=>{
+  for(const viewport of [{width:1280,height:720},{width:1024,height:768},{width:768,height:1024},{width:390,height:844},{width:320,height:568}]){
+   await page.setViewportSize(viewport);await seed(page,fixture({roster:[],present:[],history:[]}));await page.locator('#classHotspot').click();await page.locator('#pasteListBtn').click();
+   assert.equal(await page.locator('#pastedNames').evaluate(e=>e===document.activeElement),true);
+   await page.locator('#pastedNames').fill("QA Renée-José\nQA O’Neil\n<b>QA Literal</b>\nQA Last, First\n"+'Q'.repeat(40));
+   assert.equal(await page.locator('#pasteListPreview b').count(),0);assert.equal(await page.locator('#pasteListPreview li').count(),5);
+   const bounds=await page.locator('#pasteListDialog').evaluate(e=>({w:e.getBoundingClientRect().width,client:e.clientWidth,scroll:e.scrollWidth}));assert.ok(bounds.w<=viewport.width);assert.ok(bounds.scroll<=bounds.client+1,'No horizontal scroll in paste dialog');
+   const saveBounds=await page.locator('#savePasteList').boundingBox();assert.ok(saveBounds.y>=0&&saveBounds.y+saveBounds.height<=viewport.height,'Save stays visible while preview content scrolls');await page.screenshot({path:path.join(out,'paste-preview-'+viewport.width+'.png')});await page.locator('#savePasteList').click();assert.equal((await state(page)).roster.length,5);
+   await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('Q'.repeat(41));assert.equal(await page.locator('#savePasteList').isDisabled(),true);assert.match(await page.locator('#pasteListError').textContent(),/40 characters/);await page.locator('#cancelPasteList').click();
+  }
+  await seed(page,fixture({roster:Array.from({length:29},(_,i)=>'QA '+i),present:[],history:[]}));await page.locator('#classHotspot').click();await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('QA Overflow One\nQA Overflow Two');assert.equal(await page.locator('#savePasteList').isDisabled(),true);assert.equal((await state(page)).roster.length,29);
+  await page.locator('#pastedNames').fill('QA Final');await page.locator('#savePasteList').click();assert.equal((await state(page)).roster.length,30);
+ });
+ await scenario('paste list storage failure shows unsaved session state without losing existing data',async(page)=>{
+  await seed(page,fixture());const before=await state(page),raw=await page.evaluate(key=>localStorage.getItem(key),KEY);
+  await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new DOMException('Full','QuotaExceededError');};});await page.locator('#classHotspot').click();await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('QA Unsaved One\nQA Unsaved Two');await page.locator('#savePasteList').click();
+  assert.equal(await page.locator('#storageWarning').isVisible(),true);assert.equal(await page.locator('#autosaveText').textContent(),'Not saved');assert.match(await page.locator('#toast').textContent(),/only in this session/);assert.equal(await page.evaluate(key=>localStorage.getItem(key),KEY),raw);assert.deepEqual((await state(page)).present,before.present);assert.equal((await state(page)).roster.length,5);
  });
  await scenario('Apple Orchard full-class physical taps reach every child, with accessible names',async(page)=>{
   for(const size of [10,15,20,25,30]){
@@ -83,11 +120,11 @@ const server=http.createServer((req,res)=>{
  await scenario('saved markup-like names are literal across every board',async(page)=>{
   const name='<img src=x onerror="window.QAInjected=true"> & QA';
   for(const selectedTheme of ['school-bus','fall-leaves','apple-orchard']){
-   await seed(page,fixture({selectedTheme,roster:[name],present:[],history:[]}));await page.locator('#takeHotspot').click();const selector=selectedTheme==='apple-orchard'?'.apple-la-name':selectedTheme==='fall-leaves'?'.fall-la-name':'.student .name';await page.locator(selector).waitFor();assert.equal(await page.locator(selector).textContent(),name);assert.equal(await page.evaluate(()=>window.QAInjected),undefined);assert.equal(await page.locator('#studentGrid img,#fallLeavesZone img,#appleWaitLayer img').count(),0);
+   await seed(page,fixture({selectedTheme,roster:[name],present:[],history:[]}));await page.locator('#takeHotspot').click();const selector=selectedTheme==='apple-orchard'?'.apple-la-name':selectedTheme==='fall-leaves'?'.fall-la-name':'.bus-la-child.waiting .bus-la-name';await page.locator(selector).waitFor();assert.equal(await page.locator(selector).textContent(),name);assert.equal(await page.evaluate(()=>window.QAInjected),undefined);assert.equal(await page.locator('#studentGrid img,#fallLeavesZone img,#appleWaitLayer img').count(),0);
   }
  });
  await scenario('blocked storage stays usable and cannot report a successful save',async(page)=>{
-  await page.addInitScript(()=>{Storage.prototype.setItem=function(){throw new DOMException('Full','QuotaExceededError');};});await page.goto(url);await page.locator('#classHotspot').click();await page.locator('#addFriendBtn').click();await page.locator('#friendName').fill('QA Unsaved');await page.locator('#saveFriend').click();assert.equal(await page.locator('#storageWarning').isVisible(),true);assert.equal(await page.locator('#autosaveText').textContent(),'Not saved');await page.locator('#classroomAttendance').click();assert.equal(await page.locator('#studentGrid button').count(),1);
+  await page.addInitScript(()=>{Storage.prototype.setItem=function(){throw new DOMException('Full','QuotaExceededError');};});await page.goto(url);await page.locator('#classHotspot').click();await page.locator('#addFriendBtn').click();await page.locator('#friendName').fill('QA Unsaved');await page.locator('#saveFriend').click();assert.equal(await page.locator('#storageWarning').isVisible(),true);assert.equal(await page.locator('#autosaveText').textContent(),'Not saved');await page.locator('#classroomAttendance').click();assert.equal(await page.locator('#busWaitingLayer button').count(),1);
  });
  await scenario('slow Apple config cannot reopen after Close and failed fetch has usable fallback',async(page,context)=>{
   let release,started;const requested=new Promise(resolve=>{started=resolve;});await context.route('**/theme-config.json',async route=>{await new Promise(r=>{release=r;started();});await route.continue();});await seed(page,fixture({selectedTheme:'apple-orchard'}));await page.locator('#takeHotspot').click();await page.waitForFunction(()=>document.querySelector('#appleAttendance.active'));await page.locator('#appleClose').click();await requested;release();await page.waitForLoadState('networkidle');assert.equal(await page.locator('#dashboard.active').count(),1);

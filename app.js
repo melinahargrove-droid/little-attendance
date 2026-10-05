@@ -12,7 +12,7 @@ let data={
 };
 
 const themeCatalog=[
-{id:"school-bus",name:"School Bus",category:"Everyday",tag:"Good friends. Brighter days.",emoji:"🚌",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/school-bus.png"},
+{id:"school-bus",name:"School Bus",category:"Everyday",tag:"Good friends. Brighter days.",emoji:"🚌",thumb:"themes/school-bus/background.png"},
 {id:"apple-orchard",name:"Apple Orchard",category:"Fall",tag:"A sweet start to the day.",emoji:"🍎",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/shared/attendance-themes/apple-orchard/thumbnail.png"},
 {id:"pumpkin-patch",name:"Pumpkin Patch",category:"Fall",tag:"Fall friends. Bright beginnings.",emoji:"🎃",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/pumpkin-patch.png"},
 {id:"fall-leaves",name:"Fall Leaves",category:"Fall",tag:"Watch our friendship pile grow!",emoji:"🍂",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-leaves.png"},
@@ -149,6 +149,7 @@ function esc(s){
 
 let editingFriendId=null;
 let friendDialogReady=false;
+let pasteListReady=false;
 
 function setAutosaveState(saving=false){
   const pill=document.querySelector(".autosave-pill");
@@ -267,6 +268,64 @@ function moveFriend(id,delta){
   if(index<0 || next<0 || next>=data.roster.length)return;
   [data.roster[index],data.roster[next]]=[data.roster[next],data.roster[index]];
   save();renderFriends();
+}
+
+function readPastedNames(){
+  // Never split on commas or merge matching names: each line is one child.
+  const names=$("#pastedNames").value.split(/\r\n|\r|\n/).map(name=>name.trim()).filter(Boolean);
+  const matchKey=name=>name.normalize("NFC").toLocaleLowerCase();
+  const existing=new Set(data.roster.map(child=>matchKey(child.name.trim())));
+  const counts=new Map();
+  names.forEach(name=>{const key=matchKey(name);counts.set(key,(counts.get(key)||0)+1);});
+  const entries=names.map(name=>({name,inClass:existing.has(matchKey(name)),repeated:counts.get(matchKey(name))>1,tooLong:name.length>40}));
+  const duplicates=entries.some(entry=>entry.inClass||entry.repeated);
+  const remaining=Math.max(0,30-data.roster.length);
+  let error="";
+  if(names.length>remaining)error=`There is room for ${remaining} more friend${remaining===1?"":"s"}. Remove ${names.length-remaining} name${names.length-remaining===1?"":"s"} from the list before adding. No names have been added.`;
+  else if(entries.some(entry=>entry.tooLong))error="Shorten the marked names to 40 characters or fewer before adding. No names have been added.";
+  return {entries,duplicates,error};
+}
+function updatePasteListPreview(){
+  const preview=readPastedNames(),count=preview.entries.length;
+  const list=$("#pasteListPreview");list.replaceChildren();
+  preview.entries.forEach(entry=>{
+    const item=document.createElement("li"),name=document.createElement("span");
+    name.textContent=entry.name;item.appendChild(name);
+    const notes=[];
+    if(entry.tooLong)notes.push("Over 40 characters");
+    if(entry.inClass)notes.push("Name already in class");
+    if(entry.repeated)notes.push("Name repeated in this list");
+    if(notes.length){const note=document.createElement("small");note.textContent=notes.join(" · ");item.appendChild(note);}
+    list.appendChild(item);
+  });
+  $("#pasteListCount").textContent=count?`${count} friend${count===1?"":"s"} to add · ${data.roster.length+count} of 30 in class after adding`:"No names to add yet";
+  $("#pasteListError").textContent=preview.error;
+  $("#pasteListError").hidden=!preview.error;
+  $("#pastedNames").setAttribute("aria-invalid",String(Boolean(preview.error)));
+  $("#pasteListDuplicateReview").hidden=!preview.duplicates;
+  $("#savePasteList").textContent=count?`Add ${count} friend${count===1?"":"s"} to class`:"Add to class";
+  $("#savePasteList").disabled=!count||Boolean(preview.error)||(preview.duplicates&&!$("#confirmDuplicateNames").checked);
+  return preview;
+}
+function openPasteListDialog(){
+  if($("#pasteListDialog").open)return;
+  pasteListReady=true;
+  $("#pastedNames").value="";
+  $("#confirmDuplicateNames").checked=false;
+  updatePasteListPreview();
+  $("#pasteListDialog").showModal();
+  $("#pastedNames").focus();
+}
+function savePastedNames(){
+  if(!pasteListReady||!$("#pasteListDialog").open)return false;
+  // Revalidate the current roster and current text at submission time.
+  const preview=updatePasteListPreview();
+  if($("#savePasteList").disabled)return false;
+  pasteListReady=false;
+  preview.entries.forEach(({name})=>data.roster.push({id:newChildId(),name}));
+  const saved=save();renderFriends();
+  toast(saved?`${preview.entries.length} friend${preview.entries.length===1?"":"s"} added.`:"Friends added only in this session. Not saved; keep this tab open.");
+  return true;
 }
 
 
@@ -476,6 +535,18 @@ $("#classroomAttendance").onclick=()=>openAttendance();
 $("#classroomTeacher").onclick=()=>$("#teacherDialog").showModal();
 $("#addFriendBtn").onclick=()=>openFriendDialog();
 $("#addFirstFriendBtn").onclick=()=>openFriendDialog();
+$("#pasteListBtn").onclick=openPasteListDialog;
+$("#cancelPasteList").onclick=()=>{pasteListReady=false;$("#pasteListDialog").close();};
+$("#pasteListDialog").addEventListener("cancel",()=>{pasteListReady=false;});
+$("#pasteListDialog").addEventListener("close",()=>{
+  if(!$("#pasteListDialog").open){pasteListReady=false;$("#pastedNames").value="";$("#confirmDuplicateNames").checked=false;}
+});
+$("#pastedNames").addEventListener("input",()=>{$("#confirmDuplicateNames").checked=false;updatePasteListPreview();});
+$("#confirmDuplicateNames").addEventListener("change",updatePasteListPreview);
+$("#pasteListForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  if(savePastedNames())$("#pasteListDialog").close();
+});
 $("#cancelFriend").onclick=()=>{friendDialogReady=false;$("#friendDialog").close();};
 $("#friendDialog").addEventListener("close",()=>{friendDialogReady=false;});
 $("#friendName").addEventListener("input",updateFriendPreview);

@@ -6,6 +6,7 @@
 <title>Little Attendance v4</title>
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="apple-adapter.css">
+<link rel="stylesheet" href="bus-adapter.css">
 </head>
 <body>
 <div class="app">
@@ -15,7 +16,7 @@
   <div class="dashboard-stage" aria-label="Little Attendance dashboard">
     <button id="takeHotspot" class="hotspot" aria-label="Take Attendance">Take Attendance</button>
     <button id="classHotspot" class="hotspot" aria-label="My Classroom">My Classroom</button>
-    <button id="teacherHotspot" class="hotspot" aria-label="Teacher Mode">Teacher Mode</button>
+    <button id="teacherHotspot" class="hotspot" aria-label="Attendance Controls"><span class="dashboard-control-label"><span>Attendance<br>Controls</span></span></button>
   </div>
 </section>
 
@@ -32,7 +33,7 @@
         <button class="theme-nav-item" id="classroomHome">⌂ <span>Home</span></button>
         <button class="theme-nav-item active">♡ <span>My Classroom</span></button>
         <button class="theme-nav-item" id="classroomAttendance">◉ <span>Take Attendance</span></button>
-        <button class="theme-nav-item" id="classroomTeacher">⚙ <span>Teacher Mode</span></button>
+        <button class="theme-nav-item" id="classroomTeacher">⚙ <span>Attendance Controls</span></button>
       </nav>
 
       <div class="sidebar-note classroom-note">
@@ -79,7 +80,10 @@
             <h2>Your class list</h2>
             <p><span id="friendCount">0</span> of 30 friends</p>
           </div>
-          <button class="primary add-friend-btn" id="addFriendBtn">+ Add a Friend</button>
+          <div class="friend-add-actions">
+            <button class="secondary" id="pasteListBtn">Paste a list</button>
+            <button class="primary add-friend-btn" id="addFriendBtn">+ Add a Friend</button>
+          </div>
         </div>
 
         <div id="friendGrid" class="friend-grid"></div>
@@ -87,7 +91,7 @@
         <div id="friendEmpty" class="friend-empty">
           <div class="empty-friends-art">♡</div>
           <h3>Your classroom is ready for friends.</h3>
-          <p>Add each child once. Their names will stay here and appear on your attendance themes.</p>
+          <p>Add a friend below, or use Paste a list above to add your whole class. Their names will stay here and appear on your attendance themes.</p>
           <button class="primary" id="addFirstFriendBtn">+ Add Your First Friend</button>
         </div>
       </section>
@@ -123,6 +127,33 @@
   </form>
 </dialog>
 
+<dialog id="pasteListDialog" aria-labelledby="pasteListTitle" aria-describedby="pasteListHelp">
+  <form class="modal paste-list-modal" id="pasteListForm">
+    <div class="paste-list-content">
+    <div class="eyebrow">Your class list</div>
+    <h2 id="pasteListTitle">Paste a list of friends</h2>
+    <p id="pasteListHelp">Put one name on each line, then review the preview. These friends will be added to your class. Existing names and attendance will stay as they are.</p>
+    <label for="pastedNames">Names, one per line</label>
+    <textarea id="pastedNames" rows="5" autocomplete="off" spellcheck="false" aria-describedby="pasteListLimit pasteListError"></textarea>
+    <p id="pasteListLimit" class="small">Up to 30 friends per classroom. Maximum 40 characters per name. Blank lines are skipped.</p>
+    <div class="paste-list-preview">
+      <h3>Preview</h3>
+      <p id="pasteListCount" role="status" aria-live="polite"></p>
+      <ol id="pasteListPreview" aria-label="Names to add"></ol>
+    </div>
+    <p id="pasteListError" class="paste-list-error" role="status" hidden></p>
+    <label id="pasteListDuplicateReview" class="paste-list-duplicate-review" hidden>
+      <input type="checkbox" id="confirmDuplicateNames">
+      <span>I reviewed the matching names marked above. Add each line as a separate friend.</span>
+    </label>
+    </div>
+    <div class="actions friend-dialog-actions">
+      <button type="button" class="secondary" id="cancelPasteList">Cancel</button>
+      <button type="submit" class="primary" id="savePasteList" disabled>Add to class</button>
+    </div>
+  </form>
+</dialog>
+
 
 <section id="themes" class="screen">
   <div class="themes-shell">
@@ -135,7 +166,7 @@
         <button class="theme-nav-item" id="themesHome">⌂ <span>Home</span></button>
         <button class="theme-nav-item active">♡ <span>My Classroom</span></button>
         <button class="theme-nav-item" id="themesAttendance">◉ <span>Take Attendance</span></button>
-        <button class="theme-nav-item" id="themesTeacher">⚙ <span>Teacher Mode</span></button>
+        <button class="theme-nav-item" id="themesTeacher">⚙ <span>Attendance Controls</span></button>
       </nav>
       <div class="sidebar-note"><div class="sidebar-note-heart">♡</div>Same little routine.<br><strong>A whole new adventure.</strong></div>
     </aside>
@@ -172,7 +203,7 @@
   <div class="att-wrap">
     <div class="topbar">
       <button id="homeBtn" class="secondary">Home</button>
-      <div class="right"><button id="teacherBtn" class="secondary">Teacher Mode</button></div>
+      <div class="right"><button id="teacherBtn" class="secondary">Attendance Controls</button></div>
     </div>
     <div class="att-head">
       <div>
@@ -191,8 +222,8 @@
 
 <dialog id="teacherDialog">
   <div class="modal">
-    <div class="eyebrow">Teacher Mode</div>
-    <h2>Attendance controls</h2>
+    <div class="eyebrow">Attendance Controls</div>
+    <h2>Attendance Controls</h2>
     <div class="actions">
       <button id="undoBtn" class="secondary">Undo</button>
       <button id="resetBtn" class="danger">Reset</button>
@@ -211,5 +242,6 @@
 
 <script src="app.js"></script>
 <script src="apple-adapter.js"></script>
+<script src="bus-adapter.js"></script>
 </body>
 </html>
