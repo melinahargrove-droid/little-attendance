@@ -736,7 +736,8 @@ function renderFallLeavesAttendance(){
   const total=data.roster.length;
   const bucket=fallLeavesBucket(total);
   const zone=$("#fallLeavesZone");
-  zone.innerHTML="";
+  zone.innerHTML='<div class="fall-la-tree-zone"></div><div class="fall-la-pile-zone"></div>';
+  const treeZone=zone.querySelector(".fall-la-tree-zone"),pileZone=zone.querySelector(".fall-la-pile-zone");
   $("#fallHereCount").textContent=data.present.length;
   $("#fallWaitingCount").textContent=Math.max(0,total-data.present.length);
 
@@ -780,7 +781,7 @@ function renderFallLeavesAttendance(){
       setChildPresent(student.id,!data.present.includes(student.id));
       renderFallLeavesAttendance();
     });
-    zone.appendChild(el);
+    (here?pileZone:treeZone).appendChild(el);
   });
   renderEditingState();
 }

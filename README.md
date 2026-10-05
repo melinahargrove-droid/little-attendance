@@ -15,8 +15,10 @@ The recovered v4 originally embedded large artwork directly in one HTML file. Th
 Requires Node.js 22 or newer. Run `npm ci`, then `npm run check`.
 For browser-engine checks, run `npx playwright install chromium` and
 `npm run test:browser`. Set `BROWSER=webkit` after installing WebKit to test
-that engine. CI runs both engines with fictional QA rosters on localhost;
-it does not access the deployed classroom or deploy the branch.
+that engine. CI runs both engines with fictional QA rosters in isolated browser
+contexts. The visual-art check also opens the published Pages app with its own
+fictional local roster and permits only the three exact public Fall artwork
+URLs. It does not read a teacher's browser data or deploy the branch.
 
 ## Add a class list
 

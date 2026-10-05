@@ -33,6 +33,20 @@ function create(saved=fixture(),options={}){
  return {w,d,run,store,node:selector=>d.querySelector(selector),state:()=>JSON.parse(run('JSON.stringify(data)')),failWrite:value=>{failWrite=value},failRead:value=>{failRead=value}};
 }
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+test('Fall transfer preserves every approved layout, scale, size and name offset',()=>{
+ const a=create(),approved=JSON.parse(fs.readFileSync(path.join(root,'tests/fixtures/fall-approved-layout.json'),'utf8'));
+ assert.deepEqual(JSON.parse(a.run('JSON.stringify(FALL_LEAVES_CONFIG)')),approved);
+});
+for(const size of [10,15,20,25,30])test('Fall source zones and stable slots survive arrive, Undo and rename at density '+size,()=>{
+ const a=create(fixture({selectedTheme:'fall-leaves',roster:Array.from({length:size},(_,i)=>'QA Leaf '+i),present:[],history:[]}));a.run('openAttendance()');
+ const approved=JSON.parse(a.run('JSON.stringify(FALL_LEAVES_CONFIG)')),initial=a.state(),id=initial.roster[0].id;
+ const slots=()=>[...a.d.querySelectorAll('#fallLeavesZone button')].map(button=>({name:button.querySelector('.fall-la-name').textContent,parent:button.parentElement.className,x:button.style.getPropertyValue('--x'),y:button.style.getPropertyValue('--y'),w:button.style.getPropertyValue('--w'),h:button.style.getPropertyValue('--h'),s:button.style.getPropertyValue('--s')})).sort((a,b)=>a.name.localeCompare(b.name));
+ const original=slots();assert.equal(a.d.querySelectorAll('.fall-la-tree-zone button').length,size);assert.equal(a.d.querySelectorAll('.fall-la-pile-zone button').length,0);
+ for(let i=0;i<size;i++){const b=a.d.querySelectorAll('.fall-la-tree-zone button')[i],p=approved.fallTreeLayouts[size][i];assert.equal(b.style.getPropertyValue('--x'),p.x+'%');assert.equal(b.style.getPropertyValue('--y'),p.y+'%');}
+ a.run('setChildPresent('+JSON.stringify(id)+',true);renderFallLeavesAttendance()');const here=a.node('.fall-la-pile-zone button');assert.equal(here.style.getPropertyValue('--x'),approved.fallPileLayouts[size][0].x+'%');assert.equal(here.style.getPropertyValue('--y'),approved.fallPileLayouts[size][0].y+'%');assert.deepEqual(slots().filter(x=>x.name!=='QA Leaf 0'),original.filter(x=>x.name!=='QA Leaf 0'));
+ a.node('#undoBtn').click();assert.deepEqual(slots(),original);assert.deepEqual(a.state().present,[]);
+ edit(a,'QA Renamed Leaf',id);a.run('renderFallLeavesAttendance()');assert.equal(a.state().roster[0].id,id);assert.equal(a.node('.fall-la-tree-zone button .fall-la-name').textContent,'QA Renamed Leaf');assert.equal(a.node('.fall-la-tree-zone button').style.getPropertyValue('--x'),approved.fallTreeLayouts[size][0].x+'%');
+});
 test('sidebar brand has readable text instead of empty image sources or image mirroring',()=>{
  const a=create();a.run('renderClassroom()');
  assert.equal(a.d.querySelectorAll('.real-brand img').length,0);

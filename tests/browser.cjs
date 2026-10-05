@@ -36,6 +36,7 @@ const server=http.createServer((req,res)=>{
  const namesHere=async page=>{const s=await state(page);return s.roster.filter(c=>s.present.includes(c.id)).map(c=>c.name).sort();};
  try{
  await require('./visual-controls-browser.cjs')({scenario,seed,state,out});
+ await require('./fall-source-browser.cjs')({scenario,seed,state,out});
  await require('./bus-browser.cjs')({scenario,seed,state,out});
  await require('./bus-label-review.cjs')({scenario,seed,state,out});
  await require('./storage-browser.cjs')({scenario,seed,state,out});

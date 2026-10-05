@@ -562,27 +562,22 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
 }
 .fall-la-board{
   position:relative;
-  width:min(100vw,177.7778vh);
-  height:min(56.25vw,100vh);
-  aspect-ratio:16/9;
+  width:100vw;
+  height:100vh;
   overflow:hidden;
-  background:url("https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-background.png") center/cover no-repeat;
+  background:url("https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-background.png") center/100% 100% no-repeat;
   font-family:system-ui,sans-serif;
 }
 .fall-la-board button{font:inherit}
-.fall-la-count{
-  position:absolute;
-  top:12.5%;
-  font-weight:900;
-  font-size:clamp(18px,2.2vw,38px);
-  color:#123554;
-  z-index:20;
-  min-width:5%;
-  text-align:center;
-}
-.fall-la-count.here{left:64.8%}
-.fall-la-count.waiting{left:82.4%}
+/* Restore the supplied source's count container and locked offsets. */
+.fall-la-counts{position:absolute;top:17.5%;right:11.4%;width:29.8%;z-index:40;display:grid;grid-template-columns:1fr 1fr;gap:1.6vw;pointer-events:none}
+.fall-la-count{min-width:0;text-align:center;color:#123554;font:700 34px/1 Georgia,serif}
+.fall-la-count.here{transform:translate(-20px,80px)}
+.fall-la-count.waiting{transform:translate(-30px,80px)}
 .fall-la-zone{position:absolute;inset:0;pointer-events:none}
+/* The approved slot coordinates belong to these zones, not the whole board. */
+.fall-la-tree-zone{position:absolute;left:-2%;top:0;width:58%;height:72%;pointer-events:none;overflow:visible;clip-path:polygon(4.3% 1.3%,19% .9%,31% 1.3%,44.6% 1.6%,56% .6%,67.9% 1%,80.1% 1%,87.9% 3.4%,90.5% 13.4%,91.2% 23.9%,93.8% 38.8%,95.5% 54.9%,89.6% 63.9%,79% 72.9%,65.4% 79.5%,54.3% 81.3%,39.9% 76.6%,24.4% 66.2%,7% 69.5%,4.3% 54.1%,3.4% 25.7%)}
+.fall-la-pile-zone{position:absolute;left:39%;top:27%;width:64%;height:72%;pointer-events:none;overflow:visible;clip-path:polygon(2.9% 97.4%,1% 76.3%,8% 68.2%,13.1% 50.9%,23.9% 42%,30.6% 36.3%,40.1% 31.3%,48.1% 28.1%,61.5% 29.5%,78.1% 39.1%,88.9% 47.9%,95.2% 56.2%,95.2% 87.7%,95.2% 99.5%,77.7% 98.5%,58.9% 99.2%,42.4% 98.8%,16.8% 97.6%)}
 .fall-la-child{
   position:absolute;
   border:0;
@@ -600,7 +595,7 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
   width:var(--w);
   height:var(--h);
   transform:translate(-50%,-50%) rotate(var(--r)) scale(var(--s));
-  background:url("https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-here-leaf.png") center/100% 100% no-repeat;
+  background:url("https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-waiting-leaf.png") center/100% 100% no-repeat;
 }
 .fall-la-child.here{
   left:var(--x);
@@ -608,7 +603,7 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
   width:var(--w);
   height:var(--h);
   transform:translate(-50%,-50%) rotate(var(--r)) scale(var(--s));
-  background:url("https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-waiting-leaf.png") center/100% 100% no-repeat;
+  background:url("https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-here-leaf.png") center/100% 100% no-repeat;
 }
 .fall-la-photo{
   position:absolute;
@@ -618,8 +613,8 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
   display:grid;
   place-items:center;
 }
-.fall-la-child.waiting .fall-la-photo{left:25%;top:14%;width:50%;height:45%}
-.fall-la-child.here .fall-la-photo{left:24%;top:20%;width:52%;height:52%}
+.fall-la-child.waiting .fall-la-photo{left:24%;top:25%;width:52%;height:46%}
+.fall-la-child.here .fall-la-photo{left:24%;top:27%;width:52%;height:52%}
 .fall-la-photo img{width:100%;height:100%;object-fit:cover;display:block}
 .fall-la-initial{
   width:100%;height:100%;
@@ -631,22 +626,21 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
 }
 .fall-la-name{
   position:absolute;
-  left:50%;
-  top:66%;
-  transform:translate(calc(-50% + 0px),-10px);
-  max-width:78%;
+  left:17%;
+  bottom:10%;
+  width:66%;
+  transform:translate(0,-10px);
+  text-align:center;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  padding:2px 7px;
-  border-radius:999px;
-  background:rgba(255,250,244,.94);
+  background:transparent;
   color:#123554;
   font-weight:900;
-  font-size:clamp(8px,.8vw,13px);
-  line-height:1.1;
-  box-shadow:0 1px 2px rgba(0,0,0,.08);
+  font-size:11px;
+  line-height:1.05;
 }
+.fall-la-child:focus-visible{outline:3px solid #123554;outline-offset:2px}
 .fall-la-child.here .fall-la-name{display:none}
 /* transparent hotspot over the X already baked into the approved background */
 .fall-la-close{
