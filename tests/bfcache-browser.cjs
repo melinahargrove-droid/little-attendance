@@ -14,7 +14,7 @@ const server=http.createServer((req,res)=>{const file=path.resolve(root,decodeUR
  const state=p=>p.evaluate(()=>JSON.parse(JSON.stringify(data))),raw=p=>p.evaluate(k=>localStorage.getItem(k),KEY);
  const settled=p=>p.waitForFunction(()=>!['pending','requesting'].includes(editingLockState));
  async function seed(p){await p.goto(url);await p.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:KEY,value:fixture()});await p.reload();await p.waitForFunction(()=>editingLockHeld);}
- async function draft(p){await p.locator('#classHotspot').click();await p.locator('#addFriendBtn').click();await p.locator('#friendName').fill('QA Unsubmitted Draft');await p.evaluate(()=>{window.qaOriginalDocument=true;});}
+ async function draft(p){await p.locator('#classHotspot').click();await p.locator('#addFriendBtn').click();await p.locator('#friendName').fill('QA Unsubmitted Draft');await p.evaluate(()=>{window.qaOriginalDocument=true;window.qaNativePageshow=undefined;});}
  try{
   for(const kind of ['owner-unchanged','owner-stale','readonly-stale']){
    const context=await browser.newContext({viewport:{width:1280,height:720}}),errors=[];context.on('page',p=>p.on('pageerror',e=>errors.push(e.message)));
@@ -30,7 +30,8 @@ const server=http.createServer((req,res)=>{const file=path.resolve(root,decodeUR
     if(kind!=='owner-unchanged'){
      await owner.evaluate(()=>{acknowledgedAttendanceDay=localAttendanceDate();setChildPresent('qa-b',true);});saved=await raw(owner);assert.notEqual(saved,initial);await owner.close();
     }
-    await returning.goBack();await settled(returning);await returning.waitForFunction(()=>window.qaNativePageshow!==undefined);
+    // A cached document emits pageshow, not a new load event.
+    await returning.goBack({waitUntil:'commit'});await returning.waitForFunction(()=>window.qaNativePageshow!==undefined && typeof editingLockState!=='undefined' && !['pending','requesting','paused'].includes(editingLockState));
     const detail=await returning.evaluate(()=>({persisted:qaNativePageshow.persisted,restoredDocument:Boolean(window.qaOriginalDocument),notRestoredReasons:performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON?.()||null,held:editingLockHeld,lockState:editingLockState}));Object.assign(result,detail);record();assert.equal(detail.persisted,detail.restoredDocument);
     assert.equal(await raw(returning),saved);
     if(detail.persisted){
