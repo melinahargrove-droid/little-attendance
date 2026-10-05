@@ -15,7 +15,18 @@ const server=http.createServer((req,res)=>{
 });
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
- const url='http://127.0.0.1:'+server.address().port;
+ const url=process.env.TARGET_URL||('http://127.0.0.1:'+server.address().port);
+ if(process.env.TARGET_URL){
+  assert.equal(url,'https://melinahargrove-droid.github.io/little-attendance/','Only the approved existing app may be live-tested');
+  const crypto=require('node:crypto'),proof=[];
+  for(const file of ['index.html','app.js','app.css','apple-adapter.js','apple-adapter.css','assets/home-approved.png','themes/apple-orchard/background.png','themes/apple-orchard/basket-apple.png','themes/apple-orchard/waiting-apple.png','themes/apple-orchard/thumbnail.png','themes/apple-orchard/theme-config.json']){
+   const response=await fetch(url+file);assert.equal(response.status,200,file);
+   const live=Buffer.from(await response.arrayBuffer()),expected=fs.readFileSync(path.join(root,file));
+   const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
+   assert.equal(hash(live),hash(expected),'Published bytes must match checked-out commit: '+file);proof.push({file,sha256:hash(live),bytes:live.length});
+  }
+  fs.writeFileSync(path.join(out,'live-byte-proof.json'),JSON.stringify(proof,null,2));
+ }
  const browserType=process.env.BROWSER==='webkit'?webkit:chromium;
  const browser=await browserType.launch({headless:true});
  const results=[];
@@ -83,6 +94,6 @@ const server=http.createServer((req,res)=>{
   await context.unroute('**/theme-config.json');await context.route('**/theme-config.json',route=>route.abort());await page.reload();await page.locator('#takeHotspot').click();await page.locator('#attendance.active').waitFor();assert.equal(await page.locator('#studentGrid button').count(),3);await page.locator('#teacherBtn').click();await page.locator('#undoBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'1');page.once('dialog',d=>d.accept());await page.locator('#resetBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'0');
  });
  }finally{
-  fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify({engine:process.env.BROWSER||'chromium',scope:'Isolated localhost; fictional QA rosters only',results},null,2));await browser.close();server.close();
+  fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify({engine:process.env.BROWSER||'chromium',scope:process.env.TARGET_URL?'Published Pages app in fresh isolated browser contexts; fictional QA rosters only':'Isolated localhost; fictional QA rosters only',results},null,2));await browser.close();server.close();
  }
 })().catch(error=>{console.error(error);server.close();process.exitCode=1;});
