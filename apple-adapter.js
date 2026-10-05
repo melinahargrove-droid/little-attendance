@@ -57,17 +57,21 @@ async function renderApple(){
      const is=data.present.includes(child.id),p=is?pile[Math.min(data.present.indexOf(child.id),pile.length-1)]:wait[i];
      if(p)(is?hl:wl).appendChild(piece(child,is?'here':'waiting',p,is?HERE_SIZE[b]:WAIT_SIZE[b],is?HERE_SCALE[b]:WAIT_SCALE[b]));
    });
+   renderEditingState();
  }catch(error){
    if(version!==renderVersion || !document.getElementById('appleAttendance').classList.contains('active'))return;
    renderAttendance();show('attendance');toast('Apple Orchard could not load. Your attendance is available here.');
  }
 }
 const oldOpen=openAttendance;
-openAttendance=function(){if(data.selectedTheme==='apple-orchard'){if(!data.roster.length){show('classroom');renderClassroom();toast('Add your friends first.');return}renderApple();show('appleAttendance');return}oldOpen()};
+openAttendance=function(){ensureAttendanceDay();if(data.selectedTheme==='apple-orchard'){if(!data.roster.length){show('classroom');renderClassroom();toast('Add your friends first.');return}renderApple();show('appleAttendance');return}oldOpen()};
 const appleTheme=themeCatalog.find(t=>t.id==='apple-orchard');if(appleTheme)appleTheme.thumb=BASE+'thumbnail.png';
-if(!data.ownedThemes.includes('apple-orchard')){data.ownedThemes.push('apple-orchard')}
+if(!data.ownedThemes.includes('apple-orchard')){
+ data.ownedThemes.push('apple-orchard');
+ // Startup normalization is not an unsaved teacher edit and does not write storage.
+ if(!unsavedChanges)savedSessionValue=JSON.stringify(data);
+}
 ensureScreen();
-const oldUndo=document.getElementById('undoBtn').onclick;document.getElementById('undoBtn').onclick=()=>{if(data.selectedTheme==='apple-orchard' && document.getElementById('appleAttendance').classList.contains('active')){const last=data.history.pop();if(last===undefined){toast('Nothing to undo.');return}data.present=data.present.filter(i=>i!==last);save();renderApple();toast('Last check-in undone.');return}oldUndo&&oldUndo()};
-const oldReset=document.getElementById('resetBtn').onclick;document.getElementById('resetBtn').onclick=()=>{if(data.selectedTheme==='apple-orchard' && document.getElementById('appleAttendance').classList.contains('active')){if(confirm('Reset attendance for tomorrow? Your class list will stay saved.')){data.present=[];data.history=[];save();renderApple();document.getElementById('teacherDialog').close();toast('Ready for tomorrow.')}return}oldReset&&oldReset()};
+window.addEventListener('attendancechange',()=>{if(document.getElementById('appleAttendance').classList.contains('active'))renderApple();});
 renderThemeGrid();renderCurrentTheme();
 })();

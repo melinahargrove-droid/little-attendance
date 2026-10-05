@@ -1,3 +1,6 @@
+// Multi-document fixtures here intentionally model sequential reloads or
+// non-cooperating external/legacy writers with isolated mock lock managers.
+// Native cooperating-tab serialization is covered in single-writer-browser.cjs.
 // Synthetic local-only fixtures. Never reads a deployed classroom.
 const {test,afterEach}=require('node:test');
 const assert=require('node:assert/strict');
@@ -11,10 +14,12 @@ function create(saved=fixture(),options={}){
  const dom=new JSDOM(html,{url:'https://attendance.test/',runScripts:'outside-only'}),w=dom.window,d=w.document;windows.push(w);
  const store=options.store||new Map([[KEY,typeof saved==='string'?saved:JSON.stringify(saved)]]);
  Object.defineProperty(w,'localStorage',{value:{getItem:key=>store.get(key)??null,setItem:(key,val)=>{if(options.failWrite)throw Error('full');store.set(key,val);}}});
+ require('./lock-helper.cjs').installSingleDocumentLocks(w);
  w.confirm=()=>true;w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
  w.fetch=async()=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(root,'themes/apple-orchard/theme-config.json')))});
  const run=source=>vm.runInContext(source,dom.getInternalVMContext());
  for(const file of ['app.js','apple-adapter.js','bus-adapter.js'])run(fs.readFileSync(path.join(root,file),'utf8'));
+ run("acknowledgedAttendanceDay=localAttendanceDate()");
  return{w,d,run,store,node:s=>d.querySelector(s),state:()=>JSON.parse(run('JSON.stringify(data)'))};
 }
 const visible=(a,zone)=>[...a.d.querySelectorAll('#'+zone+' button:not(.is-placeholder)')];

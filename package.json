@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "node --test tests/state-and-ui.cjs tests/bus-state-and-ui.cjs",
+    "test": "node --test --test-concurrency=1 tests/state-and-ui.cjs tests/bus-state-and-ui.cjs tests/storage-safety.cjs tests/attendance-days.cjs tests/single-writer.cjs",
     "test:browser": "node tests/browser.cjs",
     "check": "node --check app.js && node --check apple-adapter.js && node --check bus-adapter.js && npm test"
   },

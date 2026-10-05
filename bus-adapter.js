@@ -134,27 +134,16 @@ function renderBus(){
   document.getElementById('busHereCount').textContent=String(count);
   document.getElementById('busWaitingCount').textContent=String(n-count);
   fitWaiting();
+  renderEditingState();
 }
 const oldOpen=openAttendance;
 openAttendance=function(){
+  ensureAttendanceDay();
   if(data.selectedTheme!=='school-bus' || !data.roster.length){oldOpen();return;}
   renderBus();show('busAttendance');fitWaiting();if(artFailed)fallback();
 };
 function busActive(){return data.selectedTheme==='school-bus' && document.getElementById('busAttendance')?.classList.contains('active');}
-const undo=document.getElementById('undoBtn'),oldUndo=undo.onclick;
-undo.onclick=()=>{
-  if(!busActive()){oldUndo?.();return;}
-  const last=data.history.pop();
-  if(last===undefined){toast('Nothing to undo.');return;}
-  data.present=data.present.filter(id=>id!==last);save();renderBus();toast('Last check-in undone.');
-};
-const reset=document.getElementById('resetBtn'),oldReset=reset.onclick;
-reset.onclick=()=>{
-  if(!busActive()){oldReset?.();return;}
-  if(confirm('Reset attendance for tomorrow? Your class list will stay saved.')){
-    data.present=[];data.history=[];save();renderBus();document.getElementById('teacherDialog').close();toast('Ready for tomorrow.');
-  }
-};
+window.addEventListener('attendancechange',()=>{if(busActive())renderBus();});
 window.addEventListener('resize',()=>{
   if(!busActive())return;
   fitWaiting();

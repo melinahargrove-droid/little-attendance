@@ -24,7 +24,8 @@ In **My Classroom**, choose **Paste a list** next to **Add a Friend**.
 Paste one name per line and review the count and preview, then choose
 **Add friends to class**. Blank lines and leading/trailing spaces are ignored.
 Names are added at the end; existing children, their stable IDs, attendance
-and undo history remain unchanged. Cancel or Escape leaves the class as it was.
+and check-in history stay intact. The addition becomes the next Undo action.
+Cancel or Escape leaves the class as it was.
 Individual add/edit controls are still available.
 
 The list must fit the existing limit of 30 friends, with at most 40 characters
@@ -62,10 +63,37 @@ the first migrated save. Loading the app alone does not rewrite saved data.
 An existing backup is never replaced. Duplicate names remain separate children.
 
 Unreadable or unsupported saved data is left untouched. Storage failures show
-a persistent warning and retain changes in the open session. A stale tab is
-prevented from overwriting a newer saved classroom; reload it before continuing.
-This is conflict protection, not multi-device or multi-tab synchronization.
+a persistent warning and retain changes in the open session. Detected stale tabs
+are blocked from saving over a newer classroom. This is conflict detection, not
+multi-device or multi-tab synchronization.
 The original classroom is not uploaded by these changes.
+
+If a save fails, the action's feedback says **Not saved** and **Try saving again**
+retries the current session without repeating the action. The same warning and
+retry are available inside open dialogs. Retrying checks for changes from other
+tabs before writing, and never bypasses a conflict or unreadable saved data.
+Unsaved classroom changes request the browser's standard warning before leaving
+or reloading; browsers can suppress that warning, so it is not a backup.
+Successful saving removes that navigation warning. Other-tab changes are flagged
+when received or when the tab becomes active; the current session is never
+automatically replaced. If both tabs have different changes, keep the unsaved tab
+open to review them before reloading. This build holds one exclusive browser Web Lock
+(named for the classroom storage key) for the editing tab. Other tabs are read-only.
+Close the owner after its work is saved, then choose **Try editing** in another tab.
+Before enabling edits, that tab compares the current saved bytes with its loaded
+snapshot while holding the lock. A stale tab must be explicitly reloaded; the app
+never replaces a board or pending form draft automatically. No lock is forcibly
+taken, and unsaved owners retain ownership. Refresh/close releases the lock; a
+restored page reacquires and validates it before editing.
+
+A browser without Web Locks, an insecure page, or a rejected lock request stays
+read-only with an explanation. Normal use requires HTTPS (localhost is suitable
+for tests) and Web Locks support. Viewing the saved classroom/history remains
+available. Close or reload tabs running an older, non-cooperating app version
+before editing: older code cannot be controlled by this lock. Existing conflict
+checks remain as an additional safeguard against external writers. This does not
+provide cross-device synchronization. Local storage can still be lost when browser
+data is cleared or the browser/device fails; this is not cross-device storage.
 
 For a rollback to the older positional build, retain both stored values and
 restore the pre-upgrade backup in the browser before using that build. The old
@@ -81,7 +109,75 @@ would need to be reconciled before such a rollback; do not blindly replace data.
 - Render saved child names as literal text, including markup-like names
 
 All 19 catalog entries and existing theme artwork remain. This is not a
-commercial release approval. Dated attendance, licensing/entitlements, privacy
-instructions, full offline support and broad device/accessibility certification
-remain separate release work. No backend, account, payment or launch work is
+commercial release approval. Licensing/entitlements, release privacy instructions, full offline support and broad
+device/accessibility certification remain separate release work. Dated browser-local
+attendance is described below and is not a cloud backup. No backend, account, payment or launch work is
 included here.
+
+## Daily attendance and optional history
+
+Attendance Controls now shows the board's date and a **Start today…** action.
+When the saved date differs from this device's local date, the app asks **Start
+a new day?** It also checks an open board after midnight and when returning to
+the tab. **Keep current attendance** or Escape leaves everything in place for
+this session; opening the app again on a different date asks again. No attendance
+is silently cleared. Legacy and empty undated boards stay undated until an
+explicit start; records saved before that are labeled **Undated attendance**.
+
+**Save attendance history** is off by default and remembers your choice after a
+successful save. On saves each current record automatically, including attendance
+changes and Undo. There is no daily save question. Off stops record updates and
+keeps existing records unchanged. **View saved attendance** opens the local
+records and **Print record** prints only their date, student names and Here/Not
+here yet status. Photos and extra student profile fields are excluded. Names in
+completed records remain as saved even when the current roster changes. A repeated
+calendar date gets a separate record, so clock/timezone changes cannot overwrite
+another day's record with the same date. No retention or archive deletion controls
+are included in this chunk.
+
+Starting a new day preserves the outgoing record when history is on, clears the
+board and old Undo actions, and writes that transition as one localStorage value.
+If a backup, storage read, detected conflict or write fails, the old in-session
+board and saved bytes are retained; retry saving and explicitly start again.
+The exclusive editing lock serializes cooperating same-origin tabs sharing the
+classroom key. This is browser-local storage, not a backup or cloud sync;
+clearing browser data can erase your classroom and saved history. Printed records
+are separate copies under your control.
+
+**Reset** means clear this board now, keeping its current date. It asks before
+clearing and can be undone. **Undo** now also restores a removed student with the
+same ID, complete local profile, former position and attendance. It leaves other
+roster/settings changes intact, and refuses to overwrite a reused ID or exceed
+30 students. Repeated resets of an empty board do not hide the previous recovery.
+Individual additions and pasted additions can also be undone, removing only their
+created IDs. This lets a full class undo a replacement addition before restoring
+the previous removed student. Later check-ins, resets and removals unwind first;
+other children and their edits are left alone. Recovery actions are saved with the classroom and survive reload; starting a new
+day clears them. The existing check-in Undo order is retained.
+
+The data schema is now 2. The exact pre-upgrade saved text is backed up once under
+`littleAttendanceCleanV4_beforeAttendanceDays` before the first upgraded save;
+the original stable-ID migration backup is also retained. Loading alone never
+writes. Invalid or unsupported day/history fields block saving rather than being
+silently discarded. To roll back to schema 1, retain both saved values and manually
+reconcile post-upgrade changes before restoring the pre-days backup. The schema 1
+safety build refuses schema 2; the older positional build is not compatible either.
+Never restore a backup blindly over newer attendance.
+
+`npm run check` includes synthetic regressions for these behaviors, with fictional
+rosters only. The test files run serially to avoid concurrent DOM-suite memory
+pressure. Browser-engine scenarios additionally cover physical controls, midnight,
+modal retry, keyboard cancellation, history scrolling, and 30-name print pagination.
+The single-writer suite additionally uses native Web Locks in two same-origin
+pages sharing one browser storage partition, with broadcast-triggered concurrent
+edit attempts, refresh, close/reacquisition, dirty-owner protection, stale drafts,
+unsupported/rejected APIs and async file-read ownership changes. Chromium has an
+actual renderer-crash release test; WebKit covers normal close but does not claim
+renderer-crash coverage. Synthetic DOM tests use a deterministic lock helper,
+with old conflict tests deliberately retaining non-cooperating legacy-writer
+models. Those mocks do not establish browser serialization.
+
+Run both engines before claiming the candidate is browser-verified. OS print
+dialog lifecycle is mocked; Chromium PDF generation and print CSS are separate
+checks. Original Apple assets, Home/School Bus artwork and locked layouts must
+remain unchanged. This branch does not merge or deploy the app.
