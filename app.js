@@ -2,6 +2,7 @@
 const STORAGE_KEY="littleAttendanceCleanV4";
 const $=s=>document.querySelector(s);
 let data={
+  schemaVersion:1,
   className:"",
   roster:[],
   present:[],
@@ -34,13 +35,103 @@ const themeCatalog=[
 const themeCats=["All","My Themes","Everyday","Fall","Winter","Spring","Summer","Holidays"];
 let themeFilter="All";
 
+// V4 used roster positions as identity. Keep the same storage key, but migrate
+// each child to an enduring ID and retain the exact pre-migration value.
+const BACKUP_KEY=STORAGE_KEY+"_beforeStableIds";
+let storedValue=null;
+let migrationBackup=null;
+let storageBlocked=false;
+let storageError="";
+let nextChildId=0;
+function newChildId(){
+  let id;
+  do{id=globalThis.crypto?.randomUUID?.()||("child-"+Date.now().toString(36)+"-"+(++nextChildId));}
+  while(data.roster.some(child=>child.id===id));
+  return id;
+}
+function migrateState(saved){
+  if(!saved || typeof saved!=="object" || Array.isArray(saved) ||
+     !Array.isArray(saved.roster) ||
+     (saved.schemaVersion!==undefined && saved.schemaVersion!==1) ||
+     (saved.className!==undefined && typeof saved.className!=="string") ||
+     (saved.present!==undefined && !Array.isArray(saved.present)) ||
+     (saved.history!==undefined && !Array.isArray(saved.history)) ||
+     (saved.ownedThemes!==undefined && !Array.isArray(saved.ownedThemes))){
+    throw new Error("Unrecognized saved classroom");
+  }
+  const used=new Set();
+  const roster=saved.roster.map((item,index)=>{
+    const child=typeof item==="string"?{name:item}:item;
+    if(!child || typeof child!=="object" || typeof child.name!=="string")throw new Error("Unrecognized saved child");
+    let id=typeof child.id==="string" && child.id?child.id:"migrated-child-"+index;
+    while(used.has(id))id+="-copy";
+    used.add(id);
+    return {...child,id};
+  });
+  const stable=saved.schemaVersion===1;
+  const toIds=values=>(values||[]).map(value=>stable?value:(Number.isInteger(value)?roster[value]?.id:null)).filter(id=>used.has(id));
+  const present=[...new Set(toIds(saved.present))];
+  // Old Apple returns left stale entries. The last check-in determines Undo order.
+  const history=[...new Set(toIds(saved.history).filter(id=>present.includes(id)).reverse())].reverse();
+  return {...data,...saved,schemaVersion:1,roster,present,history,
+    selectedTheme:themeCatalog.some(t=>t.id===saved.selectedTheme)?saved.selectedTheme:data.selectedTheme,
+    ownedThemes:[...new Set(["school-bus",...(saved.ownedThemes||[]).filter(id=>typeof id==="string")])]};
+}
+function showStorageError(message){
+  storageError=message;
+  const warning=$("#storageWarning");
+  if(warning){warning.textContent=message;warning.hidden=false;}
+  setAutosaveState(false);
+}
 function load(){
   try{
-    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if(saved) data={...data,...saved};
-  }catch(e){}
+    storedValue=localStorage.getItem(STORAGE_KEY);
+    if(storedValue!==null){
+      const saved=JSON.parse(storedValue);
+      data=migrateState(saved);
+      if(saved.schemaVersion!==1)migrationBackup=storedValue;
+    }
+  }catch(e){
+    storageBlocked=true;
+    showStorageError("Saved classroom could not be read. Existing browser data has been left untouched. Changes in this session cannot be saved.");
+  }
 }
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
+function save(){
+  if(storageBlocked)return false;
+  try{
+    // A stale tab must never silently overwrite another tab's classroom.
+    if(localStorage.getItem(STORAGE_KEY)!==storedValue){
+      storageBlocked=true;
+      showStorageError("This classroom changed in another tab. Your changes here are not saved. Reload to use the latest saved classroom.");
+      return false;
+    }
+    if(migrationBackup!==null){
+      if(localStorage.getItem(BACKUP_KEY)===null)localStorage.setItem(BACKUP_KEY,migrationBackup);
+    }
+    const next=JSON.stringify(data);
+    localStorage.setItem(STORAGE_KEY,next);
+    storedValue=next;
+    migrationBackup=null;
+    storageError="";
+    $("#storageWarning").hidden=true;
+    setAutosaveState(false);
+    return true;
+  }catch(e){
+    showStorageError("Changes are only kept in this session. Browser storage is unavailable or full; do not close this tab until saving works again.");
+    return false;
+  }
+}
+function setChildPresent(id,here){
+  if(!data.roster.some(child=>child.id===id))return;
+  if(here){
+    if(data.present.includes(id))return;
+    data.present.push(id);data.history.push(id);
+  }else{
+    data.present=data.present.filter(value=>value!==id);
+    data.history=data.history.filter(value=>value!==id);
+  }
+  save();
+}
 function show(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   $("#"+id).classList.add("active");
@@ -50,29 +141,26 @@ function toast(msg){
   const t=$("#toast");t.textContent=msg;t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),1500);
 }
-function initials(name){
-  const p=name.trim().split(/\s+/);
-  return p.length===1?p[0][0].toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();
-}
+function initials(name){return friendInitials(name);}
 function esc(s){
-  return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+  return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 }
 
 
-let editingFriendIndex=-1;
-let autosaveTimer=null;
+let editingFriendId=null;
+let friendDialogReady=false;
 
 function setAutosaveState(saving=false){
   const pill=document.querySelector(".autosave-pill");
   const text=$("#autosaveText");
   if(!pill||!text)return;
   pill.classList.toggle("saving",saving);
-  text.textContent=saving?"Saving…":"Saved automatically";
+  pill.classList.toggle("save-error",Boolean(storageError));
+  text.textContent=storageError?"Not saved":saving?"Saving…":"Saved automatically";
 }
 function autosaveClassroom(){
   setAutosaveState(true);
-  clearTimeout(autosaveTimer);
-  autosaveTimer=setTimeout(()=>{save();setAutosaveState(false)},260);
+  save();
 }
 function getThemeById(id){
   return themeCatalog.find(t=>t.id===id)||themeCatalog[0];
@@ -97,11 +185,12 @@ function renderFriends(){
   empty.classList.toggle("show",roster.length===0);
   g.style.display=roster.length?"grid":"none";
 
-  roster.forEach((name,i)=>{
+  roster.forEach((child,i)=>{
+    const {name,id}=child;
     const card=document.createElement("div");
     card.className="friend-card";
     card.innerHTML=`
-      <div class="friend-avatar">${friendInitials(name)}</div>
+      <div class="friend-avatar">${esc(friendInitials(name))}</div>
       <div style="min-width:0">
         <div class="friend-card-name">${esc(name)}</div>
         <div class="friend-card-sub">Friend ${i+1}</div>
@@ -112,10 +201,10 @@ function renderFriends(){
         <button type="button" class="friend-action edit" title="Edit" aria-label="Edit ${esc(name)}">✎</button>
         <button type="button" class="friend-action delete" title="Remove" aria-label="Remove ${esc(name)}">×</button>
       </div>`;
-    card.querySelector(".move-up").onclick=()=>moveFriend(i,-1);
-    card.querySelector(".move-down").onclick=()=>moveFriend(i,1);
-    card.querySelector(".edit").onclick=()=>openFriendDialog(i);
-    card.querySelector(".delete").onclick=()=>removeFriend(i);
+    card.querySelector(".move-up").onclick=()=>moveFriend(id,-1);
+    card.querySelector(".move-down").onclick=()=>moveFriend(id,1);
+    card.querySelector(".edit").onclick=()=>openFriendDialog(id);
+    card.querySelector(".delete").onclick=()=>removeFriend(id);
     g.appendChild(card);
   });
 }
@@ -128,17 +217,21 @@ function renderClassroom(){
   const target=$("#classroomLogoMirror");
   if(source&&target&&!target.src)target.src=source.src;
 }
-function openFriendDialog(index=-1){
-  editingFriendIndex=index;
-  const editing=index>=0;
-  const name=editing?data.roster[index]:"";
+function openFriendDialog(id=null){
+  if($("#friendDialog").open)return;
+  const child=data.roster.find(child=>child.id===id);
+  if(id!==null && !child)return;
+  editingFriendId=id;
+  friendDialogReady=true;
+  const editing=Boolean(child);
+  const name=child?child.name:"";
   $("#friendDialogEyebrow").textContent=editing?"Edit Friend":"Add a Friend";
   $("#friendDialogTitle").textContent=editing?"Update this friend":"Who's joining your classroom?";
   $("#saveFriend").textContent=editing?"Save Changes":"Add Friend";
   $("#friendName").value=name;
   updateFriendPreview();
   $("#friendDialog").showModal();
-  setTimeout(()=>$("#friendName").focus(),30);
+  setTimeout(()=>{if($("#friendDialog").open)$("#friendName").focus();},30);
 }
 function updateFriendPreview(){
   const name=$("#friendName").value.trim();
@@ -146,28 +239,33 @@ function updateFriendPreview(){
   $("#friendPreviewAvatar").textContent=name?friendInitials(name):"♡";
 }
 function saveFriendFromDialog(){
+  if(!friendDialogReady || !$("#friendDialog").open)return false;
   const name=$("#friendName").value.trim();
   if(!name){toast("Enter a name first.");return false}
-  if(editingFriendIndex<0 && data.roster.length>=30){toast("This classroom already has 30 friends.");return false}
-  if(editingFriendIndex>=0)data.roster[editingFriendIndex]=name;
-  else data.roster.push(name);
-  data.present=[];data.history=[];
-  save();renderFriends();setAutosaveState(false);
-  toast(editingFriendIndex>=0?"Friend updated.":"Friend added.");
+  const editing=editingFriendId!==null;
+  if(!editing && data.roster.length>=30){toast("This classroom already has 30 friends.");return false}
+  const child=data.roster.find(child=>child.id===editingFriendId);
+  if(editing && !child){toast("This friend is no longer in the classroom.");return false}
+  if(child)child.name=name;
+  else data.roster.push({id:newChildId(),name});
+  friendDialogReady=false;
+  save();renderFriends();
+  toast(editing?"Friend updated.":"Friend added.");
   return true;
 }
-function removeFriend(index){
-  const name=data.roster[index];
-  if(!confirm(`Remove ${name} from this classroom?`))return;
-  data.roster.splice(index,1);
-  data.present=[];data.history=[];
-  save();renderFriends();toast(name+" removed.");
+function removeFriend(id){
+  const child=data.roster.find(child=>child.id===id);
+  if(!child || !confirm(`Remove ${child.name} from this classroom?`))return;
+  data.roster=data.roster.filter(child=>child.id!==id);
+  data.present=data.present.filter(value=>value!==id);
+  data.history=data.history.filter(value=>value!==id);
+  save();renderFriends();toast(child.name+" removed.");
 }
-function moveFriend(index,delta){
+function moveFriend(id,delta){
+  const index=data.roster.findIndex(child=>child.id===id);
   const next=index+delta;
-  if(next<0||next>=data.roster.length)return;
+  if(index<0 || next<0 || next>=data.roster.length)return;
   [data.roster[index],data.roster[next]]=[data.roster[next],data.roster[index]];
-  data.present=[];data.history=[];
   save();renderFriends();
 }
 
@@ -177,17 +275,7 @@ const FALL_LEAVES_CONFIG={"fallTreeLayouts":{"10":[{"x":14,"y":18,"r":-4},{"x":3
 function fallLeavesBucket(n){
   return n<=10?10:n<=15?15:n<=20?20:n<=25?25:30;
 }
-function fallLeavesStudentAt(i){
-  const item=data.roster[i];
-  if(item && typeof item==="object"){
-    return {
-      id:item.id||("child-"+i),
-      name:item.name||("Friend "+(i+1)),
-      photo:item.photo||""
-    };
-  }
-  return {id:"child-"+i,name:String(item||("Friend "+(i+1))),photo:""};
-}
+function fallLeavesStudentAt(i){return data.roster[i];}
 function fallLeavesSizes(kind,b){
   const key=kind==="tree"?"fallTreeSizes":"fallPileSizes";
   return FALL_LEAVES_CONFIG[key][String(b)];
@@ -209,7 +297,7 @@ function renderFallLeavesAttendance(){
 
   data.roster.forEach((_,i)=>{
     const student=fallLeavesStudentAt(i);
-    const here=data.present.includes(i);
+    const here=data.present.includes(student.id);
     const pos=(here?pile:tree)[i]||{x:50,y:50,r:0};
 
     const el=document.createElement("button");
@@ -224,21 +312,20 @@ function renderFallLeavesAttendance(){
     el.style.setProperty("--h",(here?pileH:treeH)+"px");
     el.style.zIndex=String(100+i);
 
-    const photo=student.photo
-      ? `<img src="${student.photo}" alt="">`
-      : `<span class="fall-la-initial">${esc((student.name||"?")[0].toUpperCase())}</span>`;
-
-    el.innerHTML=`<span class="fall-la-photo">${photo}</span><strong class="fall-la-name">${esc(student.name)}</strong>`;
+    el.innerHTML='<span class="fall-la-photo"></span><strong class="fall-la-name"></strong>';
+    const photo=document.createElement("span");
+    photo.className="fall-la-initial";
+    photo.textContent=(student.name||"?")[0].toUpperCase();
+    // Preserve supported saved images without interpreting an attribute as HTML.
+    if(typeof student.photo==="string" && /^(https?:|data:image\/(png|jpeg|webp);base64,)/i.test(student.photo)){
+      const img=document.createElement("img");img.src=student.photo;img.alt="";
+      el.querySelector(".fall-la-photo").appendChild(img);
+    }else el.querySelector(".fall-la-photo").appendChild(photo);
+    el.querySelector(".fall-la-name").textContent=student.name;
+    el.setAttribute("aria-pressed",String(here));
 
     el.addEventListener("click",()=>{
-      if(data.present.includes(i)){
-        data.present=data.present.filter(x=>x!==i);
-        data.history=data.history.filter(x=>x!==i);
-      }else{
-        data.present.push(i);
-        data.history.push(i);
-      }
-      save();
+      setChildPresent(student.id,!data.present.includes(student.id));
       renderFallLeavesAttendance();
     });
     zone.appendChild(el);
@@ -269,13 +356,15 @@ function renderAttendance(){
     g.innerHTML='<div class="empty">Add your friends in My Classroom before taking attendance.</div>';
     return;
   }
-  data.roster.forEach((name,i)=>{
+  data.roster.forEach((child,i)=>{
+    const {name,id}=child;
     const b=document.createElement("button");
-    b.className="student"+(data.present.includes(i)?" present":"");
-    b.innerHTML=`<div class="avatar">${initials(name)}</div><div class="name">${esc(name)}</div>`;
+    b.className="student"+(data.present.includes(id)?" present":"");
+    b.setAttribute("aria-pressed",String(data.present.includes(id)));
+    b.innerHTML=`<div class="avatar">${esc(initials(name))}</div><div class="name">${esc(name)}</div>`;
     b.onclick=()=>{
-      if(data.present.includes(i))return;
-      data.present.push(i); data.history.push(i); save(); renderAttendance(); toast(name+" is here ♡");
+      if(data.present.includes(id))return;
+      setChildPresent(id,true);renderAttendance();toast(name+" is here ♡");
     };
     g.appendChild(b);
   });
@@ -387,7 +476,8 @@ $("#classroomAttendance").onclick=()=>openAttendance();
 $("#classroomTeacher").onclick=()=>$("#teacherDialog").showModal();
 $("#addFriendBtn").onclick=()=>openFriendDialog();
 $("#addFirstFriendBtn").onclick=()=>openFriendDialog();
-$("#cancelFriend").onclick=()=>$("#friendDialog").close();
+$("#cancelFriend").onclick=()=>{friendDialogReady=false;$("#friendDialog").close();};
+$("#friendDialog").addEventListener("close",()=>{friendDialogReady=false;});
 $("#friendName").addEventListener("input",updateFriendPreview);
 $("#friendForm").addEventListener("submit",e=>{
   e.preventDefault();
@@ -398,3 +488,9 @@ load();
 renderThemeFilters();
 const _themeLogo=document.querySelector(".themes-sidebar .real-brand img");
 if(_themeLogo && $("#classroomLogoMirror")) $("#classroomLogoMirror").src=_themeLogo.src;
+
+// Keep named navigation available while the approved artwork loads or if it fails.
+const dashboardArt=new Image();
+dashboardArt.onload=()=>document.querySelector(".dashboard-stage").classList.add("art-ready");
+dashboardArt.onerror=()=>document.querySelector(".dashboard-stage").classList.remove("art-ready");
+dashboardArt.src="assets/home-approved.png";

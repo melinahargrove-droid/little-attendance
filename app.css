@@ -36,15 +36,16 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
   height:min(56.25vw,100vh);
   transform:translate(-50%,-50%);
   aspect-ratio:16/9;
-  background:linear-gradient(135deg,#fffdf8,#eaf6fb 55%,#eaf5e9);
+  background-image:url("assets/home-approved.png");
   background-position:center;
   background-size:contain;
   background-repeat:no-repeat;
 }
 .hotspot{
-  position:absolute;border:0;background:transparent;color:transparent;
-  border-radius:28px;outline:none;
+  position:absolute;border:2px solid var(--line);background:var(--paper);color:var(--navy);
+  border-radius:28px;outline:none;font-weight:800;font-size:clamp(14px,2.5vw,36px);
 }
+.dashboard-stage.art-ready .hotspot{border:0;background:transparent;color:transparent}
 .hotspot:focus-visible{box-shadow:0 0 0 5px rgba(18,56,88,.28)}
 #takeHotspot{left:11.2%;top:37.2%;width:40.3%;height:52.4%}
 #classHotspot{left:52.6%;top:37.2%;width:34.7%;height:25.5%}
@@ -623,3 +624,8 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
 }
 .fall-la-close:focus-visible{outline:4px solid rgba(18,53,84,.35);outline-offset:2px}
 
+
+/* Keep failed saves visible across screens, without hiding the classroom. */
+.storage-warning{position:fixed;left:12px;right:12px;top:8px;z-index:2000;background:#fff3d3;color:#583f14;border:1px solid #cda449;border-radius:10px;padding:10px 14px;font-size:14px;box-shadow:var(--shadow)}
+.storage-warning[hidden]{display:none}
+.autosave-pill.save-error{color:#8a3b33;background:#fff5f1}

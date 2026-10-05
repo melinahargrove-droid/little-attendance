@@ -21,26 +21,53 @@ function ensureScreen(){
  document.getElementById('appleClose').onclick=()=>show('dashboard');
  document.getElementById('appleTeacher').onclick=()=>document.getElementById('teacherDialog').showModal();
 }
-function piece(name,state,pos,size,scale,index){
- const b=document.createElement('button');b.className='apple-la-piece '+state;b.style.left=pos.x+'%';b.style.top=pos.y+'%';b.style.width=size[0]+'px';b.style.height=size[1]+'px';b.style.transform=`translate(-50%,-50%) rotate(${pos.r||0}deg) scale(${scale})`;b.style.backgroundImage=`url(${BASE}${state==='here'?'basket-apple.png':'waiting-apple.png'})`;
- b.innerHTML=`<span class="apple-la-photo">${initials(name)}</span><span class="apple-la-name">${name}</span>`;
- b.onclick=()=>toggleApple(index);return b;
+function piece(child,state,pos,size,scale){
+ const {name,id}=child;
+ const b=document.createElement('button');b.type='button';b.className='apple-la-piece '+state;b.style.left=pos.x+'%';b.style.top=pos.y+'%';b.style.width=size[0]+'px';b.style.height=size[1]+'px';b.style.transform=`translate(-50%,-50%) rotate(${pos.r||0}deg) scale(${scale})`;b.style.backgroundImage=`url(${BASE}${state==='here'?'basket-apple.png':'waiting-apple.png'})`;
+ const photo=document.createElement('span');photo.className='apple-la-photo';photo.textContent=initials(name);
+ const label=document.createElement('span');label.className='apple-la-name';label.textContent=name;
+ b.appendChild(photo);b.appendChild(label);
+ b.setAttribute('aria-label',(state==='here'?'Return ':'Mark here ')+name);
+ b.setAttribute('aria-pressed',String(state==='here'));
+ b.onclick=()=>{setChildPresent(id,!data.present.includes(id));renderApple();};return b;
 }
-let config=null;
-async function getConfig(){if(config)return config;config=await fetch(BASE+'theme-config.json').then(r=>r.json());return config}
+let configPromise=null;
+let renderVersion=0;
+function getConfig(){
+ if(!configPromise)configPromise=fetch(BASE+'theme-config.json').then(response=>{
+   if(!response.ok)throw new Error('Theme unavailable');
+   return response.json();
+ }).then(config=>{
+   if(!Array.isArray(config?.basket?.pile) || !config.basket.pile.length)throw new Error('Theme unavailable');
+   return config;
+ }).catch(error=>{configPromise=null;throw error;});
+ return configPromise;
+}
 async function renderApple(){
- ensureScreen();const cfg=await getConfig(),n=data.roster.length,b=bucket(n),wait=WAIT[b],pile=cfg.basket.pile;
- const wl=document.getElementById('appleWaitLayer'),hl=document.getElementById('appleHereLayer');wl.innerHTML='';hl.innerHTML='';
- document.getElementById('appleHereCount').textContent=data.present.length;document.getElementById('appleWaitCount').textContent=Math.max(0,n-data.present.length);
- data.roster.forEach((name,i)=>{const is=data.present.includes(i),p=is?pile[Math.min(data.present.indexOf(i),pile.length-1)]:wait[i];if(!p)return;(is?hl:wl).appendChild(piece(name,is?'here':'waiting',p,is?HERE_SIZE[b]:WAIT_SIZE[b],is?HERE_SCALE[b]:WAIT_SCALE[b],i))});
+ ensureScreen();const version=++renderVersion;
+ try{
+   const cfg=await getConfig();
+   if(version!==renderVersion || data.selectedTheme!=='apple-orchard' || !document.getElementById('appleAttendance').classList.contains('active'))return;
+   const n=data.roster.length,b=bucket(n),wait=WAIT[b],pile=cfg.basket.pile;
+   const wl=document.getElementById('appleWaitLayer'),hl=document.getElementById('appleHereLayer');wl.innerHTML='';hl.innerHTML='';
+   const here=document.getElementById('appleHereCount'),waiting=document.getElementById('appleWaitCount');
+   here.textContent=data.present.length;waiting.textContent=Math.max(0,n-data.present.length);
+   here.setAttribute('aria-label',data.present.length+' here');waiting.setAttribute('aria-label',Math.max(0,n-data.present.length)+' not here yet');
+   data.roster.forEach((child,i)=>{
+     const is=data.present.includes(child.id),p=is?pile[Math.min(data.present.indexOf(child.id),pile.length-1)]:wait[i];
+     if(p)(is?hl:wl).appendChild(piece(child,is?'here':'waiting',p,is?HERE_SIZE[b]:WAIT_SIZE[b],is?HERE_SCALE[b]:WAIT_SCALE[b]));
+   });
+ }catch(error){
+   if(version!==renderVersion || !document.getElementById('appleAttendance').classList.contains('active'))return;
+   renderAttendance();show('attendance');toast('Apple Orchard could not load. Your attendance is available here.');
+ }
 }
-function toggleApple(i){const at=data.present.indexOf(i);if(at>=0)data.present.splice(at,1);else{data.present.push(i);data.history.push(i)}save();renderApple()}
 const oldOpen=openAttendance;
 openAttendance=function(){if(data.selectedTheme==='apple-orchard'){if(!data.roster.length){show('classroom');renderClassroom();toast('Add your friends first.');return}renderApple();show('appleAttendance');return}oldOpen()};
 const appleTheme=themeCatalog.find(t=>t.id==='apple-orchard');if(appleTheme)appleTheme.thumb=BASE+'thumbnail.png';
-if(!data.ownedThemes.includes('apple-orchard')){data.ownedThemes.push('apple-orchard');save()}
+if(!data.ownedThemes.includes('apple-orchard')){data.ownedThemes.push('apple-orchard')}
 ensureScreen();
-const oldUndo=document.getElementById('undoBtn').onclick;document.getElementById('undoBtn').onclick=()=>{if(data.selectedTheme==='apple-orchard'){const last=data.history.pop();if(last===undefined){toast('Nothing to undo.');return}data.present=data.present.filter(i=>i!==last);save();renderApple();toast('Last check-in undone.');return}oldUndo&&oldUndo()};
-const oldReset=document.getElementById('resetBtn').onclick;document.getElementById('resetBtn').onclick=()=>{if(data.selectedTheme==='apple-orchard'){if(confirm('Reset attendance for tomorrow? Your class list will stay saved.')){data.present=[];data.history=[];save();renderApple();document.getElementById('teacherDialog').close();toast('Ready for tomorrow.')}return}oldReset&&oldReset()};
+const oldUndo=document.getElementById('undoBtn').onclick;document.getElementById('undoBtn').onclick=()=>{if(data.selectedTheme==='apple-orchard' && document.getElementById('appleAttendance').classList.contains('active')){const last=data.history.pop();if(last===undefined){toast('Nothing to undo.');return}data.present=data.present.filter(i=>i!==last);save();renderApple();toast('Last check-in undone.');return}oldUndo&&oldUndo()};
+const oldReset=document.getElementById('resetBtn').onclick;document.getElementById('resetBtn').onclick=()=>{if(data.selectedTheme==='apple-orchard' && document.getElementById('appleAttendance').classList.contains('active')){if(confirm('Reset attendance for tomorrow? Your class list will stay saved.')){data.present=[];data.history=[];save();renderApple();document.getElementById('teacherDialog').close();toast('Ready for tomorrow.')}return}oldReset&&oldReset()};
 renderThemeGrid();renderCurrentTheme();
 })();

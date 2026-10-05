@@ -9,6 +9,7 @@
 </head>
 <body>
 <div class="app">
+<div id="storageWarning" class="storage-warning" role="alert" hidden></div>
 
 <section id="dashboard" class="screen active">
   <div class="dashboard-stage" aria-label="Little Attendance dashboard">
@@ -205,7 +206,7 @@
 
 <input id="themeFile" type="file" accept=".littletheme,.json" hidden>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 </div>
 
 <script src="app.js"></script>
