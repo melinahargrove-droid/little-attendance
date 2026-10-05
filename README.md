@@ -183,3 +183,20 @@ Run both engines before claiming the candidate is browser-verified. OS print
 dialog lifecycle is mocked; Chromium PDF generation and print CSS are separate
 checks. Original Apple assets, Home/School Bus artwork and locked layouts must
 remain unchanged. This branch does not merge or deploy the app.
+
+## Bounded visual repairs
+
+Apple Orchard keeps its original art, student coordinates and Close hit area.
+A visible **Close** label appears when the viewport crops out the painted X;
+the original X is retained at matching wide proportions. Keyboard focus remains
+visible. Sidebar branding uses intentional **One Little Teacher** text instead
+of an empty image URL.
+
+Fall Leaves uses the exact supplied artwork and approved layout arrays. The
+waiting and Here PNG mappings, canopy/pile coordinate spaces, photo/name
+alignment and live count positions follow the supplied Fall Leaves handoff.
+The old tracing masks are omitted because they exclude several approved slots
+and can hide a child completely. No slots, scales or piece sizes are changed.
+All five class-size buckets are checked at 1024×768, 1280×720 and 1671×941,
+including real taps inside photos, arrivals, Undo and roster renaming. The three
+existing external image URLs remain dependencies; they are not an offline cache.

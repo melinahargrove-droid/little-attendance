@@ -136,6 +136,6 @@ const server=http.createServer((req,res)=>{
   await context.unroute('**/theme-config.json');await context.route('**/theme-config.json',route=>route.abort());await page.reload();await page.evaluate(()=>{acknowledgedAttendanceDay=localAttendanceDate();});await page.locator('#takeHotspot').click();await page.locator('#attendance.active').waitFor();assert.equal(await page.locator('#studentGrid button').count(),3);await page.locator('#teacherBtn').click();await page.locator('#undoBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'1');page.once('dialog',d=>d.accept());await page.locator('#resetBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'0');
  });
  }finally{
-  fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify({engine:process.env.BROWSER||'chromium',scope:process.env.TARGET_URL?'Published Pages app in fresh isolated browser contexts; fictional QA rosters only':'Isolated localhost; fictional QA rosters only',results},null,2));await browser.close();server.close();
+  fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify({engine:process.env.BROWSER||'chromium',scope:process.env.TARGET_URL?'Published Pages app in fresh isolated browser contexts; fictional QA rosters only':'Isolated localhost plus published Fall artwork check; fictional QA rosters only',results},null,2));await browser.close();server.close();
  }
 })().catch(error=>{console.error(error);server.close();process.exitCode=1;});
