@@ -69,6 +69,24 @@ module.exports=async({scenario,seed,state,out})=>{
   }
  });
  if(process.env.BROWSER!=='webkit')await scenario('native Chromium: actual renderer crash releases the lock to an unchanged reader',async(page,context)=>{
-  await seed(page,fixture());const other=await second(page,context),before=await state(other),session=await context.newCDPSession(page);const crashed=page.waitForEvent('crash',{timeout:10000});session.send('Page.crash').catch(()=>{});await crashed;await other.locator('#retrySave').click();await held(other);assert.deepEqual(await state(other),before);await other.evaluate(()=>setChildPresent('qa-b',true));assert.deepEqual(JSON.parse(await raw(other)).present,['qa-a','qa-b']);
+  await seed(page,fixture());const other=await second(page,context),before=await state(other),saved=await raw(other),session=await context.newCDPSession(page);
+  const proof={cdp:{status:'pending'},crashEvent:false,route:'Page.crash'};
+  const record=()=>require('node:fs').writeFileSync(path.join(out,'single-writer-crash.json'),JSON.stringify(proof,null,2));
+  page.on('crash',()=>{proof.crashEvent=true;record();});
+  await page.evaluate(()=>{localStorage.removeItem('qa-owner-pagehide');window.addEventListener('pagehide',()=>localStorage.setItem('qa-owner-pagehide','yes'));});
+  await page.bringToFront();record();
+  try{
+   const cdpCrash=page.waitForEvent('crash',{timeout:5000}).then(()=>true,error=>{proof.cdpEventWait=error.message;record();return false;});
+   session.send('Page.crash').then(result=>{proof.cdp={status:'resolved',result};record();},error=>{proof.cdp={status:'rejected',error:error.message};record();});
+   if(!await cdpCrash){
+    // Playwright's own v1.58.2 page-event-crash.spec.ts uses this Chromium route.
+    // It crashes this isolated fictional owner, without ordinary close/pagehide.
+    proof.route='chrome://crash';record();const actualCrash=page.waitForEvent('crash',{timeout:10000});
+    page.goto('chrome://crash',{timeout:10000}).then(()=>{proof.navigation='resolved';record();},error=>{proof.navigation=error.message;record();});await actualCrash;
+   }
+   assert.equal(proof.crashEvent,true);assert.equal(await other.evaluate(()=>localStorage.getItem('qa-owner-pagehide')),null,'Crash release must not be a graceful pagehide release');assert.equal(await raw(other),saved);
+   await other.waitForFunction(async()=>!(await navigator.locks.query()).held.some(lock=>lock.name===STORAGE_KEY));proof.ownerLockReleased=true;
+   await other.locator('#retrySave').click();await held(other);assert.deepEqual(await state(other),before);await other.evaluate(()=>setChildPresent('qa-b',true));assert.deepEqual(JSON.parse(await raw(other)).present,['qa-a','qa-b']);proof.readerSaved=true;
+  }finally{record();}
  });
 };
