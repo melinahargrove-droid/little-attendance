@@ -1,3 +1,6 @@
+// Multi-document fixtures here intentionally model sequential reloads or
+// non-cooperating external/legacy writers with isolated mock lock managers.
+// Native cooperating-tab serialization is covered in single-writer-browser.cjs.
 const {test, afterEach}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -19,6 +22,7 @@ function create(saved=fixture(),options={}){
  const store=options.store||new Map(saved===null?[]:[[KEY,typeof saved==='string'?saved:JSON.stringify(saved)]]);
  let failWrite=options.failWrite,failRead=options.failRead;
  Object.defineProperty(w,'localStorage',{value:{getItem:key=>{if(failRead)throw Error('Storage disabled');return store.get(key)??null},setItem:(key,value)=>{if(failWrite)throw Error('Quota exceeded');store.set(key,value)}}});
+ require('./lock-helper.cjs').installSingleDocumentLocks(w);
  w.confirm=()=>true;
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
  w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};

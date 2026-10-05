@@ -1,3 +1,6 @@
+// Multi-document fixtures here intentionally model sequential reloads or
+// non-cooperating external/legacy writers with isolated mock lock managers.
+// Native cooperating-tab serialization is covered in single-writer-browser.cjs.
 // Synthetic save/conflict regressions. No deployed classroom is read.
 const {test,afterEach}=require('node:test');
 const assert=require('node:assert/strict');
@@ -10,6 +13,7 @@ function create(state=fixture(),options={}){
  const dom=new JSDOM(fs.readFileSync(path.join(ROOT,'index.html'),'utf8'),{url:'https://attendance.test/',runScripts:'outside-only'}),w=dom.window;windows.push(w);
  const store=options.store||new Map([[KEY,JSON.stringify(state)]]);let failWrite=!!options.failWrite,failRead=!!options.failRead;
  Object.defineProperty(w,'localStorage',{value:{getItem:key=>{if(failRead)throw Error('Synthetic read failure');return store.get(key)??null},setItem:(key,value)=>{if(failWrite)throw Error('Synthetic quota failure');store.set(key,value)}}});
+ require('./lock-helper.cjs').installSingleDocumentLocks(w);
  w.confirm=()=>true;w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};
  w.fetch=async()=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(ROOT,'themes/apple-orchard/theme-config.json'),'utf8'))});
  const run=s=>vm.runInContext(s,dom.getInternalVMContext());
@@ -81,9 +85,9 @@ test('focus and visible-page checks detect missed changes; unrelated/stale event
 test('cleared storage is treated as a conflict rather than silently repopulated',()=>{
  const a=create(),before=a.state();a.store.delete(KEY);notifyStorage(a,null,null,null);assert.equal(a.run('storageBlocked'),true);assert.equal(a.node('#retrySave').hidden,true);a.node('#retrySave').click();assert.equal(a.store.has(KEY),false);assert.deepEqual(a.state(),before);
 });
-test('unreadable initial storage remains protected from retry, including after session edits',()=>{
- const a=create(fixture(),{failRead:true}),raw=a.store.get(KEY);assert.equal(unloadIsGuarded(a),false);a.failRead(false);a.node('#retrySave').click();assert.equal(a.store.get(KEY),raw);assert.equal(a.node('#retrySave').hidden,true);
- a.run('openFriendDialog()');a.node('#friendName').value='QA Unsaved';a.node('#friendForm').dispatchEvent(new a.w.Event('submit',{cancelable:true}));assertNotSaved(a);a.node('#retrySave').click();assert.equal(a.store.get(KEY),raw);
+test('unreadable initial storage remains protected; unvalidated session cannot edit or retry writes',async()=>{
+ const a=create(fixture(),{failRead:true}),raw=a.store.get(KEY),before=a.state();assert.equal(unloadIsGuarded(a),false);await settle();a.failRead(false);a.node('#retrySave').click();await settle();assert.equal(a.store.get(KEY),raw);assert.equal(a.node('#retrySave').hidden,true);
+ a.run('openFriendDialog()');a.node('#friendName').value='QA Unsaved';a.node('#friendForm').dispatchEvent(new a.w.Event('submit',{cancelable:true}));assert.deepEqual(a.state(),before);assert.equal(a.node('#friendName').value,'QA Unsaved');assert.equal(a.node('#friendDialog').open,true);assert.equal(a.run('editingLockHeld'),false);assert.equal(unloadIsGuarded(a),false);a.node('#retrySave').click();assert.equal(a.store.get(KEY),raw);
 });
 test('failed migration retries retain original backup and stable identities',()=>{
  const legacy={className:'QA Legacy',roster:['QA Alpha','QA Beta'],present:[0],history:[0],selectedTheme:'school-bus'},a=create(legacy,{failWrite:true}),raw=a.store.get(KEY);a.run('setChildPresent(data.roster[1].id,true)');const before=a.state();retryAndVerify(a,raw,before);assert.equal(a.store.get(KEY+'_beforeStableIds'),raw);

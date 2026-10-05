@@ -134,6 +134,7 @@ function renderBus(){
   document.getElementById('busHereCount').textContent=String(count);
   document.getElementById('busWaitingCount').textContent=String(n-count);
   fitWaiting();
+  renderEditingState();
 }
 const oldOpen=openAttendance;
 openAttendance=function(){

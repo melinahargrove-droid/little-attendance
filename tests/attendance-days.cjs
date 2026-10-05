@@ -1,3 +1,6 @@
+// Multi-document fixtures here intentionally model sequential reloads or
+// non-cooperating external/legacy writers with isolated mock lock managers.
+// Native cooperating-tab serialization is covered in single-writer-browser.cjs.
 // Fictional classroom only. These are DOM/state checks, not browser-engine QA.
 const {test,afterEach}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{JSDOM}=require('jsdom');
@@ -9,6 +12,7 @@ function create(saved=fixture(),options={}){
  const store=options.store||new Map(saved===null?[]:[[KEY,typeof saved==='string'?saved:JSON.stringify(saved)]]);let failWrite=options.failWrite,failRead=options.failRead,clock='2026-10-05T12:00:00';const NativeDate=w.Date;
  w.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[clock]));}static now(){return new NativeDate(clock).getTime();}};
  Object.defineProperty(w,'localStorage',{value:{getItem:key=>{if(failRead)throw Error('Synthetic read error');return store.get(key)??null;},setItem:(key,value)=>{if(failWrite)throw Error('Synthetic full storage');store.set(key,value);}}});
+ require('./lock-helper.cjs').installSingleDocumentLocks(w);
  w.confirm=()=>true;w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
  w.fetch=async()=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(ROOT,'themes/apple-orchard/theme-config.json')))});
  const run=s=>vm.runInContext(s,dom.getInternalVMContext());for(const file of ['app.js','apple-adapter.js','bus-adapter.js'])run(fs.readFileSync(path.join(ROOT,file),'utf8'));

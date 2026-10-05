@@ -53,6 +53,99 @@ let storageIssue="";
 let savedSessionValue=JSON.stringify(data);
 let unsavedChanges=false;
 let nextChildId=0;
+// Web Locks coordinate every cooperating copy that uses this storage key.
+// Never use a timed lease or steal a lock: a paused owner may have unsaved work.
+const EDITING_LOCK_NAME=STORAGE_KEY;
+let editingLockHeld=false;
+let editingLockState="pending";
+let editingLockMessage="Checking whether this tab can edit the classroom…";
+let releaseEditingLock=null;
+let editingLockGeneration=0;
+let pageIsLeaving=false;
+function storageNotice(){
+  return editingLockHeld?storageError:[editingLockMessage,storageError].filter(Boolean).join(" ");
+}
+function renderEditingState(){
+  const message=storageNotice();
+  $("#storageWarningText").textContent=message;
+  $("#storageWarning").hidden=!message;
+  const retry=$("#retrySave");
+  retry.hidden=editingLockHeld?storageIssue!=="write":editingLockState!=="blocked";
+  retry.textContent=editingLockHeld?"Try saving again":"Try editing";
+  // ARIA-disabled keeps the artwork/layout unchanged. Mutation gates below are
+  // the enforcement boundary, including direct calls and asynchronous handlers.
+  document.querySelectorAll("#className,#saveFriend,#savePasteList,#saveAttendanceHistory,#startTodayBtn,#startNewDay,#undoBtn,#resetBtn,#addPurchasedTheme,.friend-action.move-up,.friend-action.move-down,.friend-action.delete,.theme-card,#studentGrid button,#fallLeavesZone button,#appleWaitLayer button,#appleHereLayer button,#busWaitingLayer button,#busHereLayer button").forEach(control=>control.setAttribute("aria-disabled",String(!editingLockHeld)));
+  $("#className").readOnly=!editingLockHeld;
+  renderDialogStorageWarnings();
+  setAutosaveState(false);
+}
+function requireEditingLock(){
+  if(editingLockHeld)return true;
+  renderEditingState();
+  toast(editingLockMessage);
+  return false;
+}
+function requestEditingLock(){
+  if(editingLockHeld || pageIsLeaving || editingLockState==="requesting")return;
+  const generation=++editingLockGeneration;
+  if(!navigator.locks || typeof navigator.locks.request!=="function"){
+    editingLockState="unsupported";
+    editingLockMessage="Read only: safe editing is unavailable in this browser. Open the secure version of this page in an up-to-date browser. You can still view and print saved attendance; your classroom has not been changed.";
+    renderEditingState();return;
+  }
+  editingLockState="requesting";
+  editingLockMessage="Checking whether this tab can edit the classroom…";
+  renderEditingState();
+  const failed=()=>{
+    if(generation!==editingLockGeneration)return;
+    editingLockHeld=false;releaseEditingLock=null;editingLockState="blocked";
+    editingLockMessage="Read only: safe editing could not be started. Keep any unsaved work in this tab and try editing again.";
+    renderEditingState();
+  };
+  try{
+    navigator.locks.request(EDITING_LOCK_NAME,{mode:"exclusive",ifAvailable:true},lock=>{
+      if(generation!==editingLockGeneration || pageIsLeaving)return;
+      if(!lock){
+        editingLockState="blocked";
+        editingLockMessage="Read only: another tab is editing this classroom. Close that tab after its changes are saved, then choose Try editing here. Nothing in this tab will be automatically replaced.";
+        renderEditingState();return;
+      }
+      // Check under the lock before enabling any edit. Never reload a snapshot
+      // or a form draft here, even when the tab appears clean.
+      try{
+        if(localStorage.getItem(STORAGE_KEY)!==storedValue){
+          showStorageConflict();
+          editingLockState="stale";
+          editingLockMessage="Read only: reload to use the latest saved classroom. Keep this tab open if you need to review any unsaved work or draft first.";
+          renderEditingState();return;
+        }
+        if(storageBlocked){
+          editingLockState="stale";
+          editingLockMessage="Read only: the saved classroom could not be safely validated. Existing data and this tab have been left untouched.";
+          renderEditingState();return;
+        }
+      }catch(error){failed();return;}
+      editingLockHeld=true;editingLockState="held";editingLockMessage="";
+      const held=new Promise(resolve=>{releaseEditingLock=resolve;});
+      renderEditingState();checkAttendanceDate();
+      return held;
+    }).catch(failed);
+  }catch(error){failed();}
+}
+function releaseEditingSession(){
+  pageIsLeaving=true;
+  ++editingLockGeneration;
+  editingLockHeld=false;editingLockState="paused";
+  editingLockMessage="Read only: editing is paused until this tab safely reacquires the classroom.";
+  const release=releaseEditingLock;releaseEditingLock=null;
+  renderEditingState();
+  if(release)release();
+}
+window.addEventListener("pagehide",releaseEditingSession);
+window.addEventListener("pageshow",()=>{
+  pageIsLeaving=false;
+  requestEditingLock();
+});
 function newChildId(){
   let id;
   do{id=globalThis.crypto?.randomUUID?.()||("child-"+Date.now().toString(36)+"-"+(++nextChildId));}
@@ -103,7 +196,7 @@ function renderDialogStorageWarnings(){
   // Keep the same storage status and safe retry reachable inside each dialog.
   document.querySelectorAll("dialog").forEach(dialog=>{
     let warning=dialog.querySelector(".storage-warning-dialog");
-    if(!warning && storageError){
+    if(!warning && storageNotice()){
       warning=document.createElement("div");
       warning.className="storage-warning-dialog";
       warning.setAttribute("role","alert");
@@ -114,21 +207,18 @@ function renderDialogStorageWarnings(){
       dialog.querySelector("h2").insertAdjacentElement("afterend",warning);
     }
     if(warning){
-      warning.hidden=!storageError;
-      warning.querySelector("span").textContent=storageError;
-      warning.querySelector("button").hidden=storageIssue!=="write";
+      warning.hidden=!storageNotice();
+      warning.querySelector("span").textContent=storageNotice();
+      warning.querySelector("button").hidden=editingLockHeld?storageIssue!=="write":editingLockState!=="blocked";
+      warning.querySelector("button").textContent=editingLockHeld?"Try saving again":"Try editing";
     }
   });
 }
-function retrySave(){toastSaveResult(save(),"Changes saved.");}
+function retrySave(){if(!editingLockHeld){requestEditingLock();return;}toastSaveResult(save(),"Changes saved.");}
 function showStorageError(message,issue="write"){
   storageError=message;
   storageIssue=issue;
-  const warning=$("#storageWarning");
-  if(warning){$("#storageWarningText").textContent=message;warning.hidden=false;}
-  $("#retrySave").hidden=issue!=="write";
-  renderDialogStorageWarnings();
-  setAutosaveState(false);
+  renderEditingState();
 }
 function showStorageConflict(){
   storageBlocked=true;
@@ -162,6 +252,7 @@ function load(){
   savedSessionValue=JSON.stringify(data);
 }
 function save(){
+  if(!requireEditingLock())return false;
   updateAttendanceRecord();
   renderAttendanceControls();
   trackUnsavedChanges();
@@ -188,10 +279,7 @@ function save(){
     dayMigrationBackup=null;
     storageError="";
     storageIssue="";
-    $("#storageWarning").hidden=true;
-    $("#retrySave").hidden=true;
-    renderDialogStorageWarnings();
-    setAutosaveState(false);
+    renderEditingState();
     return true;
   }catch(e){
     showStorageError("Changes are only kept in this session. Browser storage is unavailable or full; do not close this tab until saving works again.");
@@ -199,6 +287,7 @@ function save(){
   }
 }
 function setChildPresent(id,here){
+  if(!requireEditingLock())return null;
   if(!data.roster.some(child=>child.id===id))return;
   if(!ensureAttendanceDay())return null;
   if(here){
@@ -294,6 +383,7 @@ function refreshAttendanceViews(){
   window.dispatchEvent(new Event("attendancechange"));
 }
 function undoAttendance(){
+  if(!requireEditingLock())return false;
   const action=data.undoActions.at(-1);
   if(!action){toast("Nothing to undo.");return;}
   if(action.type==="add"){
@@ -320,6 +410,7 @@ function undoAttendance(){
   toastSaveResult(saved,action.type==="add"?"Added friends undone.":action.type==="remove"?"Friend restored.":action.type==="reset"?"Reset undone.":"Last check-in undone.");
 }
 function resetAttendance(){
+  if(!requireEditingLock())return false;
   if(!confirm("Reset this attendance now? Your class list and date stay the same. You can Undo this reset."))return;
   // Repeated resets of an already-clear board must not hide the useful Undo.
   if(!data.present.length&&!data.history.length){toast("Attendance is already clear.");return;}
@@ -350,11 +441,12 @@ function ensureAttendanceDay(force=false){
 }
 function checkAttendanceDate(){
   renderAttendanceControls();
-  if(attendancePrintInProgress)return;
+  if(attendancePrintInProgress || !editingLockHeld)return;
   // Undated legacy data is explained on entering attendance, not guessed on load.
   if(data.attendanceDay!==null && data.attendanceDay!==localAttendanceDate() && !storageBlocked)ensureAttendanceDay();
 }
 function startNewAttendanceDay(){
+  if(!requireEditingLock())return false;
   if(!$("#newDayDialog").open)return;
   const today=localAttendanceDate();
   if(pendingAttendanceDate!==today){ensureAttendanceDay(true);return;}
@@ -426,7 +518,7 @@ function printSavedAttendance(){
   try{window.print();}catch(error){finish();toast("Printing could not open. Please try again.");}
 }
 function setupAttendanceDays(){
-  $("#saveAttendanceHistory").onchange=()=>{data.saveAttendanceHistory=$("#saveAttendanceHistory").checked;toastSaveResult(save(),data.saveAttendanceHistory?"Attendance history is on.":"Attendance history is off. Saved records were kept.");};
+  $("#saveAttendanceHistory").onchange=()=>{if(!requireEditingLock()){renderAttendanceControls();return;}data.saveAttendanceHistory=$("#saveAttendanceHistory").checked;toastSaveResult(save(),data.saveAttendanceHistory?"Attendance history is on.":"Attendance history is off. Saved records were kept.");};
   $("#startTodayBtn").onclick=()=>ensureAttendanceDay(true);
   $("#startNewDay").onclick=startNewAttendanceDay;
   const keep=()=>{acknowledgedAttendanceDay=localAttendanceDate();$("#newDayDialog").close();};
@@ -452,7 +544,7 @@ function setAutosaveState(saving=false){
   if(!pill||!text)return;
   pill.classList.toggle("saving",saving);
   pill.classList.toggle("save-error",Boolean(storageError));
-  text.textContent=storageError?"Not saved":saving?"Saving…":"Saved automatically";
+  text.textContent=storageError?"Not saved":!editingLockHeld?"Read only":saving?"Saving…":"Saved automatically";
 }
 function autosaveClassroom(){
   setAutosaveState(true);
@@ -503,6 +595,7 @@ function renderFriends(){
     card.querySelector(".delete").onclick=()=>removeFriend(id);
     g.appendChild(card);
   });
+  renderEditingState();
 }
 function renderClassroom(){
   $("#className").value=data.className||"";
@@ -535,6 +628,7 @@ function updateFriendPreview(){
   $("#friendPreviewAvatar").textContent=name?friendInitials(name):"♡";
 }
 function saveFriendFromDialog(){
+  if(!requireEditingLock())return false;
   if(!friendDialogReady || !$("#friendDialog").open)return false;
   const name=$("#friendName").value.trim();
   if(!name){toast("Enter a name first.");return false}
@@ -552,6 +646,7 @@ function saveFriendFromDialog(){
   return true;
 }
 function removeFriend(id){
+  if(!requireEditingLock())return false;
   const child=data.roster.find(child=>child.id===id);
   if(!child || !confirm(`Remove ${child.name} from this classroom?`))return;
   data.undoActions.push({type:"remove",child:JSON.parse(JSON.stringify(child)),index:data.roster.indexOf(child),presentIndex:data.present.indexOf(id),historyIndex:data.history.indexOf(id)});
@@ -561,6 +656,7 @@ function removeFriend(id){
   const saved=save();renderFriends();toastSaveResult(saved,child.name+" removed.");
 }
 function moveFriend(id,delta){
+  if(!requireEditingLock())return false;
   const index=data.roster.findIndex(child=>child.id===id);
   const next=index+delta;
   if(index<0 || next<0 || next>=data.roster.length)return;
@@ -615,6 +711,7 @@ function openPasteListDialog(){
   $("#pastedNames").focus();
 }
 function savePastedNames(){
+  if(!requireEditingLock())return false;
   if(!pasteListReady||!$("#pasteListDialog").open)return false;
   // Revalidate the current roster and current text at submission time.
   const preview=updatePasteListPreview();
@@ -689,6 +786,7 @@ function renderFallLeavesAttendance(){
     });
     zone.appendChild(el);
   });
+  renderEditingState();
 }
 function openAttendance(){
   ensureAttendanceDay();
@@ -730,6 +828,7 @@ function renderAttendance(){
     };
     g.appendChild(b);
   });
+  renderEditingState();
 }
 
 function renderThemeFilters(){
@@ -770,6 +869,7 @@ function renderThemeGrid(){
         </div>
       </div>`;
     b.onclick=()=>{
+      if(!requireEditingLock())return;
       if(isOwned){
         data.selectedTheme=t.id; const saved=save(); renderThemeGrid(); if($("#currentThemeName"))renderCurrentTheme(); toastSaveResult(saved,t.name+" selected.");
       }else{
@@ -778,6 +878,7 @@ function renderThemeGrid(){
     };
     g.appendChild(b);
   });
+  renderEditingState();
 }
 
 $("#takeHotspot").onclick=()=>openAttendance();
@@ -788,11 +889,14 @@ $("#themesBack").onclick=()=>show("classroom");
 $("#themeSearch").oninput=renderThemeGrid;
 $("#clearThemeSearch").onclick=()=>{$("#themeSearch").value="";renderThemeGrid()};
 
-$("#addPurchasedTheme").onclick=()=>$("#themeFile").click();
+$("#addPurchasedTheme").onclick=()=>{if(requireEditingLock())$("#themeFile").click();};
 $("#themeFile").onchange=async e=>{
   const f=e.target.files[0]; if(!f)return;
+  if(!requireEditingLock()){e.target.value="";return;}
+  const editingGeneration=editingLockGeneration;
   try{
     const pack=JSON.parse(await f.text());
+    if(editingGeneration!==editingLockGeneration || !requireEditingLock()){e.target.value="";return;}
     const ids=Array.isArray(pack.themeIds)?pack.themeIds:[pack.themeId];
     const valid=ids.filter(id=>themeCatalog.some(t=>t.id===id));
     if(!valid.length) throw new Error();
@@ -820,6 +924,7 @@ $("#themesTeacher").onclick=()=>$("#teacherDialog").showModal();
 
 
 $("#className").addEventListener("input",e=>{
+  if(!requireEditingLock()){e.target.value=data.className;return;}
   data.className=e.target.value;
   autosaveClassroom();
 });
@@ -860,6 +965,7 @@ document.addEventListener("visibilitychange",()=>{
 });
 load();
 setupAttendanceDays();
+requestEditingLock();
 renderThemeFilters();
 const _themeLogo=document.querySelector(".themes-sidebar .real-brand img");
 if(_themeLogo && $("#classroomLogoMirror")) $("#classroomLogoMirror").src=_themeLogo.src;

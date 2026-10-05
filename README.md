@@ -77,8 +77,22 @@ or reloading; browsers can suppress that warning, so it is not a backup.
 Successful saving removes that navigation warning. Other-tab changes are flagged
 when received or when the tab becomes active; the current session is never
 automatically replaced. If both tabs have different changes, keep the unsaved tab
-open to review them before reloading. Use one active editing tab: truly simultaneous
-writes in different tabs are not yet serialized and can lose an update. Local storage can still be lost when browser
+open to review them before reloading. This build holds one exclusive browser Web Lock
+(named for the classroom storage key) for the editing tab. Other tabs are read-only.
+Close the owner after its work is saved, then choose **Try editing** in another tab.
+Before enabling edits, that tab compares the current saved bytes with its loaded
+snapshot while holding the lock. A stale tab must be explicitly reloaded; the app
+never replaces a board or pending form draft automatically. No lock is forcibly
+taken, and unsaved owners retain ownership. Refresh/close releases the lock; a
+restored page reacquires and validates it before editing.
+
+A browser without Web Locks, an insecure page, or a rejected lock request stays
+read-only with an explanation. Normal use requires HTTPS (localhost is suitable
+for tests) and Web Locks support. Viewing the saved classroom/history remains
+available. Close or reload tabs running an older, non-cooperating app version
+before editing: older code cannot be controlled by this lock. Existing conflict
+checks remain as an additional safeguard against external writers. This does not
+provide cross-device synchronization. Local storage can still be lost when browser
 data is cleared or the browser/device fails; this is not cross-device storage.
 
 For a rollback to the older positional build, retain both stored values and
@@ -125,8 +139,8 @@ Starting a new day preserves the outgoing record when history is on, clears the
 board and old Undo actions, and writes that transition as one localStorage value.
 If a backup, storage read, detected conflict or write fails, the old in-session
 board and saved bytes are retained; retry saving and explicitly start again.
-The read/check/write sequence still has the simultaneous-tab race described above.
-Use one editing tab. This is browser-local storage, not a backup or cloud sync;
+The exclusive editing lock serializes cooperating same-origin tabs sharing the
+classroom key. This is browser-local storage, not a backup or cloud sync;
 clearing browser data can erase your classroom and saved history. Printed records
 are separate copies under your control.
 
@@ -154,9 +168,16 @@ Never restore a backup blindly over newer attendance.
 rosters only. The test files run serially to avoid concurrent DOM-suite memory
 pressure. Browser-engine scenarios additionally cover physical controls, midnight,
 modal retry, keyboard cancellation, history scrolling, and 30-name print pagination.
-They must be run in Chromium and WebKit with installed binaries before visual or
-print certification. This local chunk was not browser-executed: binaries were not
-available and the attempted official download in the earlier audit was truncated.
-The four Apple binary assets absent from this local snapshot remain in the remote
-repository and must be preserved during integration. Home/School Bus assets and
-locked layouts are unchanged. Nothing here publishes, merges, deploys, or starts CI.
+The single-writer suite additionally uses native Web Locks in two same-origin
+pages sharing one browser storage partition, with broadcast-triggered concurrent
+edit attempts, refresh, close/reacquisition, dirty-owner protection, stale drafts,
+unsupported/rejected APIs and async file-read ownership changes. Chromium has an
+actual renderer-crash release test; WebKit covers normal close but does not claim
+renderer-crash coverage. Synthetic DOM tests use a deterministic lock helper,
+with old conflict tests deliberately retaining non-cooperating legacy-writer
+models. Those mocks do not establish browser serialization.
+
+Run both engines before claiming the candidate is browser-verified. OS print
+dialog lifecycle is mocked; Chromium PDF generation and print CSS are separate
+checks. Original Apple assets, Home/School Bus artwork and locked layouts must
+remain unchanged. This branch does not merge or deploy the app.
