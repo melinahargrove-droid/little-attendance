@@ -30,8 +30,8 @@ const server=http.createServer((req,res)=>{
  const browserType=process.env.BROWSER==='webkit'?webkit:chromium;
  const browser=await browserType.launch({headless:true});
  const results=[];
- async function scenario(name,fn){const context=await browser.newContext({viewport:{width:1280,height:720}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await context.route('**/*',route=>route.request().url().startsWith(url)?route.continue():route.abort());try{await fn(page,context);assert.deepEqual(errors,[],name+' has no page errors');results.push({name,pass:true});console.log('PASS '+name);}finally{await context.close();}}
- const seed=async(page,value)=>{await page.goto(url);await page.evaluate(({KEY,value})=>{localStorage.setItem(KEY,JSON.stringify(value));},{KEY,value});await page.reload();await page.evaluate(()=>{acknowledgedAttendanceDay=localAttendanceDate();});};
+ async function scenario(name,fn){const context=await browser.newContext({viewport:{width:1280,height:720}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));context.on('page',other=>other.on('pageerror',e=>errors.push(e.message)));await context.route('**/*',route=>route.request().url().startsWith(url)?route.continue():route.abort());try{await fn(page,context);assert.deepEqual(errors,[],name+' has no page errors');results.push({name,pass:true});console.log('PASS '+name);}finally{await context.close();}}
+ const seed=async(page,value)=>{await page.goto(url);await page.evaluate(({KEY,value})=>{localStorage.setItem(KEY,JSON.stringify(value));},{KEY,value});await page.reload();await page.waitForFunction(()=>editingLockHeld);await page.evaluate(()=>{acknowledgedAttendanceDay=localAttendanceDate();});};
  const state=page=>page.evaluate(()=>JSON.parse(JSON.stringify(data)));
  const namesHere=async page=>{const s=await state(page);return s.roster.filter(c=>s.present.includes(c.id)).map(c=>c.name).sort();};
  try{
@@ -39,6 +39,7 @@ const server=http.createServer((req,res)=>{
  await require('./bus-label-review.cjs')({scenario,seed,state,out});
  await require('./storage-browser.cjs')({scenario,seed,state,out});
  await require('./attendance-days-browser.cjs')({scenario,seed,state,out});
+ await require('./single-writer-browser.cjs')({scenario,seed,state,out});
  await scenario('approved home art, three controls, keyboard, navigation and resize',async(page)=>{
   await seed(page,fixture());const image=await page.locator('.dashboard-stage').evaluate(async el=>{const css=getComputedStyle(el).backgroundImage;const img=new Image();img.src=css.slice(5,-2);await img.decode();return{width:img.naturalWidth,height:img.naturalHeight};});assert.deepEqual(image,{width:1920,height:1080});
   assert.equal(await page.locator('#teacherHotspot').getAttribute('aria-label'),'Attendance Controls');assert.notEqual(await page.locator('.dashboard-control-label').evaluate(e=>getComputedStyle(e).color),'rgba(0, 0, 0, 0)');await page.screenshot({path:path.join(out,'home-desktop.png')});

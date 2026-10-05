@@ -57,6 +57,7 @@ async function renderApple(){
      const is=data.present.includes(child.id),p=is?pile[Math.min(data.present.indexOf(child.id),pile.length-1)]:wait[i];
      if(p)(is?hl:wl).appendChild(piece(child,is?'here':'waiting',p,is?HERE_SIZE[b]:WAIT_SIZE[b],is?HERE_SCALE[b]:WAIT_SCALE[b]));
    });
+   renderEditingState();
  }catch(error){
    if(version!==renderVersion || !document.getElementById('appleAttendance').classList.contains('active'))return;
    renderAttendance();show('attendance');toast('Apple Orchard could not load. Your attendance is available here.');
