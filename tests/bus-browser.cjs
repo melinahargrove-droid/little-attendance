@@ -19,8 +19,12 @@ module.exports=async function({scenario,seed,state,out}){
     const geometry=await page.locator('.bus-la-window').evaluate(el=>{const c=getComputedStyle(el),p=el.parentElement.getBoundingClientRect();return{left:parseFloat(c.left)/p.width,top:parseFloat(c.top)/p.height,width:parseFloat(c.width)/p.width,height:parseFloat(c.height)/p.height,transform:c.transform};});
     for(const [key,expected] of Object.entries({left:.408,top:.361,width:.518,height:.20188}))assert.ok(Math.abs(geometry[key]-expected)<.0001,key);
     assert.equal(geometry.transform,'matrix(1, 0, 0, 1, 0, 15)');
+    const labelSizes=await page.locator('#busWaitingLayer .bus-la-name').evaluateAll(nodes=>nodes.map(node=>parseFloat(getComputedStyle(node).fontSize)*.95*Number(node.closest('#busWaitingLayer').dataset.fit)));
+    assert.ok(labelSizes.every(size=>size>=7.59),`source-minimum 7.6px effective names at ${viewport.width}/${n}`);
+    if(viewport.width===1671){assert.equal(await page.locator('#busWaitingLayer').getAttribute('data-fit'),'1');assert.equal(await page.locator('#busWaitingLayer').getAttribute('data-fit-width'),'100');}
+    const waitingInitialOverflow=await page.locator(visible('busWaitingLayer')+' .bus-la-avatar').evaluateAll(nodes=>nodes.filter(node=>node.scrollWidth>node.clientWidth||node.scrollHeight>node.clientHeight).map(node=>node.parentElement.dataset.childId));assert.deepEqual(waitingInitialOverflow,[],`waiting initials fit at ${viewport.width}/${n}`);
     const before=await boxes(page);assert.ok(before.every(b=>b.w>=24 && b.h>=24),`at least 24px targets at ${viewport.width}/${n}`);
-    landscapeReport.push({viewport,count:n,waitingFit:await page.locator('#busWaitingLayer').getAttribute('data-fit'),label:await page.locator('#busWaitingLayer .bus-la-name').first().evaluate(el=>({font:getComputedStyle(el).fontSize,text:el.textContent})),targets:before});fs.writeFileSync(path.join(out,'bus-landscape-observations.json'),JSON.stringify(landscapeReport,null,2));await page.screenshot({path:path.join(out,`bus-${viewport.width}-${n}-waiting.png`)});
+    landscapeReport.push({viewport,count:n,waitingFit:await page.locator('#busWaitingLayer').getAttribute('data-fit'),fitWidth:await page.locator('#busWaitingLayer').getAttribute('data-fit-width'),label:await page.locator('#busWaitingLayer .bus-la-name').first().evaluate(el=>({font:getComputedStyle(el).fontSize,text:el.textContent})),targets:before});fs.writeFileSync(path.join(out,'bus-landscape-observations.json'),JSON.stringify(landscapeReport,null,2));await page.screenshot({path:path.join(out,`bus-${viewport.width}-${n}-waiting.png`)});
     const clipped=await page.locator(visible('busWaitingLayer')).evaluateAll(nodes=>nodes.filter(node=>{const r=node.getBoundingClientRect(),z=node.closest('.bus-la-waiting').getBoundingClientRect();return r.left<z.left-1||r.right>z.right+1||r.top<z.top-1||r.bottom>z.bottom+1;}).map(node=>node.dataset.childId));
     assert.deepEqual(clipped,[],`all ${n} waiting children fit at ${viewport.width}`);
     for(let i=n-1;i>=0;i--){
@@ -31,6 +35,7 @@ module.exports=async function({scenario,seed,state,out}){
     assert.equal(await page.locator('#busHereCount').textContent(),String(n));assert.equal(await page.locator('#busWaitingCount').textContent(),'0');
     assert.equal(await page.locator(visible('busHereLayer')+' .bus-la-name').first().evaluate(el=>getComputedStyle(el).display),'none');
     const clippedRiders=await page.locator(visible('busHereLayer')+' .bus-la-avatar').evaluateAll(nodes=>nodes.filter(node=>{const r=node.getBoundingClientRect(),z=node.closest('.bus-la-window').getBoundingClientRect();return r.left<z.left-1||r.right>z.right+1||r.top<z.top-1||r.bottom>z.bottom+1;}).length);assert.equal(clippedRiders,0);
+    const riderInitialOverflow=await page.locator(visible('busHereLayer')+' .bus-la-avatar').evaluateAll(nodes=>nodes.filter(node=>node.scrollWidth>node.clientWidth||node.scrollHeight>node.clientHeight).map(node=>node.parentElement.dataset.childId));assert.deepEqual(riderInitialOverflow,[],`rider initials fit at ${viewport.width}/${n}`);
     await page.screenshot({path:path.join(out,`bus-${viewport.width}-${n}-here.png`)});
     await page.getByRole('button',{name:'Return QA Friend 01',exact:true}).click();assertFixed(before,await boxes(page));assert.equal((await state(page)).present.length,n-1);
     await page.getByRole('button',{name:'Mark here QA Friend 01',exact:true}).click();await page.locator('#busTeacher').click();await page.locator('#undoBtn').click();await page.locator('#closeTeacher').click();assert.equal((await state(page)).present.includes('bus-qa-0'),false);assertFixed(before,await boxes(page));
@@ -39,6 +44,15 @@ module.exports=async function({scenario,seed,state,out}){
     await page.locator('#busTeacher').click();page.once('dialog',d=>d.accept());await page.locator('#resetBtn').click();assert.equal(await page.locator('#busHereCount').textContent(),'0');assert.equal((await state(page)).history.length,0);
    }
   }
+ });
+ await scenario('School Bus wide initials and long names fit the smallest landscape seats',async page=>{
+  await page.setViewportSize({width:1024,height:768});const children=fixture(30);children.roster.forEach((child,i)=>{child.name=i%2?'Wendy Wallace':'W'.repeat(19)+' '+'W'.repeat(20);});
+  await seed(page,children);await page.locator('#takeHotspot').click();await page.locator('.bus-la-bg').evaluate(img=>img.decode());const before=await boxes(page);
+  const sizes=await page.locator('#busWaitingLayer .bus-la-name').evaluateAll(nodes=>nodes.map(node=>parseFloat(getComputedStyle(node).fontSize)*.95*Number(node.closest('#busWaitingLayer').dataset.fit)));assert.ok(sizes.every(n=>n>=7.59));
+  const overflow=()=>page.locator('.bus-la-child:not(.is-placeholder) .bus-la-avatar').evaluateAll(nodes=>nodes.filter(node=>node.scrollWidth>node.clientWidth||node.scrollHeight>node.clientHeight).length);
+  assert.equal(await overflow(),0);await page.screenshot({path:path.join(out,'bus-1024-wide-initials-waiting.png')});
+  for(let i=0;i<30;i++){await page.locator('#busWaitingLayer [data-child-id="bus-qa-'+i+'"]').click();assertFixed(before,await boxes(page));}
+  assert.equal(await overflow(),0);assert.equal((await state(page)).present.length,30);await page.screenshot({path:path.join(out,'bus-1024-wide-initials-here.png')});
  });
  await scenario('School Bus portrait evidence without substituting another board',async page=>{
   const report=[];

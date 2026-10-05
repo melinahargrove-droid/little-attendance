@@ -5,7 +5,7 @@ const BASE='themes/school-bus/';
 // Density depends on the whole roster, never on the number already on the bus.
 const density=n=>n<=6?1:n<=12?2:n<=16?3:n<=20?4:n<=24?5:n<=27?6:7;
 const tier=n=>n<=10?'xs':n<=15?'sm':n<=20?'md':n<=25?'lg':'xl';
-let rosterKey='',slots=new Map(),artFailed=false;
+let rosterKey='',fitKey='',slots=new Map(),artFailed=false;
 function safePhoto(child){
   // Legacy local raster photos can be displayed without sending child data or
   // fetching third-party URLs. Remote URLs and SVG/HTML are intentionally unused.
@@ -57,17 +57,46 @@ function fitWaiting(){
   const screen=document.getElementById('busAttendance');
   if(!screen.classList.contains('active'))return;
   const outer=screen.querySelector('.bus-la-waiting'),grid=document.getElementById('busWaitingLayer');
-  grid.style.transform='scale(1)';
   const frame=outer.getBoundingClientRect(),nodes=[...grid.children];
   if(!frame.width || !frame.height || !nodes.length)return;
-  // Measure both active children and their placeholders, so the fit never
-  // changes when anyone arrives. Preserve source pixel sizing whenever it fits.
-  const rects=nodes.flatMap(node=>[node.getBoundingClientRect(),node.querySelector('.bus-la-avatar').getBoundingClientRect()]);
-  const width=Math.max(...rects.map(r=>r.right))-Math.min(...rects.map(r=>r.left));
-  const height=Math.max(...rects.map(r=>r.bottom))-Math.min(...rects.map(r=>r.top));
+  const key=rosterKey+'|'+frame.width+'|'+frame.height;
+  if(key===fitKey)return;
+  fitKey=key;
+  grid.style.width='100%';grid.style.left='0';grid.style.right='auto';
+  grid.style.transform='scale(1)';grid.style.removeProperty('--bus-la-name-floor');
   const css=getComputedStyle(grid),paddingX=(parseFloat(css.paddingLeft)+parseFloat(css.paddingRight))*.95,paddingY=(parseFloat(css.paddingTop)+parseFloat(css.paddingBottom))*.95;
-  const fit=Math.min(1,(frame.width-paddingX)/width,(frame.height-paddingY)/height);
-  grid.style.transform=`scale(${fit})`;grid.dataset.fit=String(fit);
+  function measure(){
+    // Always include placeholders: arrival state cannot affect the chosen fit.
+    const rects=nodes.flatMap(node=>[node.getBoundingClientRect(),node.querySelector('.bus-la-avatar').getBoundingClientRect()]);
+    const width=Math.max(...rects.map(r=>r.right))-Math.min(...rects.map(r=>r.left));
+    const height=Math.max(...rects.map(r=>r.bottom))-Math.min(...rects.map(r=>r.top));
+    return Math.min(1,(frame.width-paddingX)/width,(frame.height-paddingY)/height);
+  }
+  let best={width:100,fit:measure()};
+  // Leave fitting source layouts completely untouched. For overflow, trying
+  // a little more inner width can remove a whole wrapped row and avoid tiny
+  // portraits. The outer shelter and its locked transform never change.
+  if(best.fit<.999){
+    for(let width=102;width<=180;width+=2){
+      grid.style.width=width+'%';
+      const fit=measure();
+      if(fit>best.fit+.0001)best={width,fit};
+    }
+  }
+  grid.style.width=best.width+'%';grid.style.left='50%';
+  grid.style.transform='translateX(-50%) scale(1)';
+  // The original 30-child names are 8px before the approved .95 transform.
+  // Do not let overflow fitting make another roster's labels smaller than that.
+  // Iterate because the slightly larger type can itself change row height.
+  for(let pass=0;best.fit<.999 && pass<6;pass++){
+    grid.style.setProperty('--bus-la-name-floor',(8/best.fit)+'px');
+    const fit=measure();
+    if(Math.abs(fit-best.fit)<.0001){best.fit=fit;break;}
+    best.fit=fit;
+  }
+  if(best.fit<.999)grid.style.setProperty('--bus-la-name-floor',(8/best.fit)+'px');
+  grid.style.transform=`translateX(-50%) scale(${best.fit})`;
+  grid.dataset.fit=String(best.fit);grid.dataset.fitWidth=String(best.width);
 }
 function renderBus(){
   ensureScreen();

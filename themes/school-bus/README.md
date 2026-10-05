@@ -27,7 +27,10 @@ Two old implementation problems are intentionally corrected:
 
 The original shelter and its approved translate/scale remain unchanged. If a
 landscape viewport or long names would overflow, a centered inner fit adjustment
-keeps the full roster inside that shelter. This adjustment measures all slots,
+keeps the full roster inside that shelter. A bounded inner-width search avoids
+unnecessary shrinking, and scaled labels retain at least the original 7.6px
+effective minimum. Initials fit within their existing avatar boxes. The source
+layout stays unchanged whenever it fits. This adjustment measures all slots,
 including placeholders, so it does not change on attendance actions. Names keep
 the source's single-line ellipsis and a complete accessible button label.
 

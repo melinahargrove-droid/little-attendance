@@ -88,3 +88,23 @@ test('bus adapter leaves Apple, other themes, generic actions, and empty classro
  const b=create(fixture(2,{selectedTheme:'apple-orchard'}));b.run('openAttendance()');await new Promise(r=>setImmediate(r));assert.ok(b.node('#appleAttendance.active'));b.node('#appleWaitLayer button').click();await new Promise(r=>setImmediate(r));b.node('#undoBtn').click();assert.deepEqual(b.state().present,[]);
  b.run('data.selectedTheme="fall-leaves";openAttendance()');assert.ok(b.node('#fallLeavesAttendance.active'));assert.equal(b.run('themeCatalog.length'),19);
 });
+
+test('overflow fitting chooses readable rows inside the same shelter and caches stable slots',()=>{
+ const a=create(fixture(20));a.run('openAttendance()');
+ const outer=a.node('.bus-la-waiting'),grid=a.node('#busWaitingLayer');
+ let width=1671*.282,height=941*.445,measurements=0;
+ outer.getBoundingClientRect=()=>({width:width*.95,height:height*.95});grid.style.padding='10px 14px';
+ for(const [i,node] of [...grid.children].entries()){
+  const rect=()=>{
+   measurements++;
+   const inner=width*parseFloat(grid.style.width||'100')/100,columns=Math.max(1,Math.floor((inner-28+9)/(74+9))),row=Math.floor(i/columns),col=i%columns;
+   const label=Math.max(11,parseFloat(grid.style.getPropertyValue('--bus-la-name-floor'))||0),cardHeight=62+label;
+   return{left:col*83*.95,right:(col*83+74)*.95,top:row*(cardHeight+10)*.95,bottom:(row*(cardHeight+10)+cardHeight)*.95};
+  };
+  node.getBoundingClientRect=rect;node.querySelector('.bus-la-avatar').getBoundingClientRect=rect;
+ }
+ a.w.dispatchEvent(new a.w.Event('resize'));assert.equal(grid.dataset.fit,'1');assert.equal(grid.dataset.fitWidth,'100');assert.equal(grid.style.getPropertyValue('--bus-la-name-floor'),'');
+ width=1024*.282;height=768*.445;a.w.dispatchEvent(new a.w.Event('resize'));
+ assert.ok(Number(grid.dataset.fitWidth)>100);assert.ok(Number(grid.dataset.fit)>.75);assert.ok(Math.max(11,parseFloat(grid.style.getPropertyValue('--bus-la-name-floor')))*.95*Number(grid.dataset.fit)>=7.59);
+ const before=measurements,fit=grid.dataset.fit;click(a,'busWaitingLayer','qa-2');assert.equal(grid.dataset.fit,fit);assert.equal(measurements,before,'arrival does not remeasure or reposition slots');
+});
