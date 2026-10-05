@@ -36,7 +36,7 @@ module.exports=async({scenario,seed,state,out})=>{
     const fallback=viewport.width/viewport.height<1.75||viewport.width/viewport.height>1.8;assert.equal(await label.isVisible(),fallback);
     const metrics=await close.evaluate(button=>{const b=button.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return{x:b.x,y:b.y,width:b.width,height:b.height,hit:hit===button||button.contains(hit)};});
     assert.ok(Math.abs(metrics.x-viewport.width*.928)<1);assert.equal(metrics.y,0);assert.ok(Math.abs(metrics.width-viewport.width*.072)<1);assert.ok(Math.abs(metrics.height-viewport.height*.11)<1);assert.equal(metrics.hit,true);
-    await close.focus();assert.equal(await close.evaluate(button=>getComputedStyle(button).outlineStyle),'solid');
+    await close.focus();await target.keyboard.press('Tab');await target.keyboard.press('Shift+Tab');assert.equal(await close.evaluate(button=>button===document.activeElement),true);assert.equal(await close.evaluate(button=>getComputedStyle(button).outlineStyle),'solid');
     await target.screenshot({path:path.join(out,'visual-apple-'+mode+'-'+viewport.width+'.png')});
     await target.keyboard.press('Enter');assert.equal(await target.locator('#dashboard.active').count(),1);assert.deepEqual(await state(target),before);
     await target.locator('#takeHotspot').click();await close.click();assert.equal(await target.locator('#dashboard.active').count(),1);assert.deepEqual(await state(target),before);
