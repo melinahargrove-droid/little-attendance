@@ -37,7 +37,7 @@ const server=http.createServer((req,res)=>{
  try{
  await scenario('approved home art, three controls, keyboard, navigation and resize',async(page)=>{
   await seed(page,fixture());const image=await page.locator('.dashboard-stage').evaluate(async el=>{const css=getComputedStyle(el).backgroundImage;const img=new Image();img.src=css.slice(5,-2);await img.decode();return{width:img.naturalWidth,height:img.naturalHeight};});assert.deepEqual(image,{width:1920,height:1080});
-  await page.screenshot({path:path.join(out,'home-desktop.png')});
+  assert.equal(await page.locator('#teacherHotspot').getAttribute('aria-label'),'Attendance Controls');assert.notEqual(await page.locator('.dashboard-control-label').evaluate(e=>getComputedStyle(e).color),'rgba(0, 0, 0, 0)');await page.screenshot({path:path.join(out,'home-desktop.png')});
   await page.getByRole('button',{name:'My Classroom',exact:true}).click();assert.equal(await page.locator('#classroom').evaluate(e=>e.classList.contains('active')),true);
   await page.locator('#classBack').click();await page.locator('#takeHotspot').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#attendance.active').count(),1);
   await page.locator('#homeBtn').click();await page.locator('#teacherHotspot').click();assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),true);await page.locator('#closeTeacher').click();
@@ -55,6 +55,36 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.evaluate(key=>localStorage.getItem(key),BACKUP),original);
   await page.reload();await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha Renamed']);await page.locator('#closeTeacher').click();
   await page.locator('#classHotspot').click();await page.locator('#className').fill('QA Immediate Reload');await page.reload();assert.equal((await state(page)).className,'QA Immediate Reload');
+ });
+ await scenario('paste list preview, cancel, Escape, append, duplicates, reload and undo',async(page)=>{
+  const old=fixture();await seed(page,old);const raw=JSON.stringify(old),before=await state(page);await page.locator('#classHotspot').click();
+  await page.getByRole('button',{name:'Paste a list',exact:true}).click();await page.locator('#pastedNames').fill("QA Renée\nQA O’Neil\nQA Anne-Marie");
+  assert.equal(await page.locator('#pasteListPreview li').count(),3);assert.deepEqual(await state(page),before);assert.equal(await page.evaluate(key=>localStorage.getItem(key),KEY),raw);
+  await page.locator('#cancelPasteList').click();assert.deepEqual(await state(page),before);assert.equal(await page.locator('#pasteListBtn').evaluate(e=>e===document.activeElement),true);
+  await page.locator('#pasteListBtn').click();assert.equal(await page.locator('#pastedNames').inputValue(),'');await page.locator('#pastedNames').fill('QA Escape');await page.keyboard.press('Escape');assert.deepEqual(await state(page),before);
+  await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill("  QA Renée\n\nQA O’Neil\nQA Anne-Marie  ");await page.keyboard.press('Tab');assert.equal(await page.locator('#cancelPasteList').evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Tab');assert.equal(await page.locator('#savePasteList').evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Enter');
+  const added=await state(page);assert.deepEqual(added.roster.slice(0,3),before.roster);assert.deepEqual(added.present,before.present);assert.deepEqual(added.history,before.history);assert.equal(added.roster.length,6);assert.equal(new Set(added.roster.map(c=>c.id)).size,6);assert.equal(await page.evaluate(key=>localStorage.getItem(key),BACKUP),raw);
+  await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('QA Alpha\nQA Same\nQA Same');assert.equal(await page.locator('#savePasteList').isDisabled(),true);assert.equal(await page.locator('#pasteListPreview small').count(),3);
+  await page.screenshot({path:path.join(out,'paste-duplicate-review.png')});await page.locator('#confirmDuplicateNames').check();await page.locator('#savePasteList').click();assert.equal((await state(page)).roster.length,9);assert.equal(new Set((await state(page)).roster.map(c=>c.id)).size,9);
+  await page.reload();assert.equal((await state(page)).roster.length,9);await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha']);
+ });
+ await scenario('paste list responsive preview, long names, limits and literal text',async(page)=>{
+  for(const viewport of [{width:1280,height:720},{width:1024,height:768},{width:768,height:1024},{width:390,height:844},{width:320,height:568}]){
+   await page.setViewportSize(viewport);await seed(page,fixture({roster:[],present:[],history:[]}));await page.locator('#classHotspot').click();await page.locator('#pasteListBtn').click();
+   assert.equal(await page.locator('#pastedNames').evaluate(e=>e===document.activeElement),true);
+   await page.locator('#pastedNames').fill("QA Renée-José\nQA O’Neil\n<b>QA Literal</b>\nQA Last, First\n"+'Q'.repeat(40));
+   assert.equal(await page.locator('#pasteListPreview b').count(),0);assert.equal(await page.locator('#pasteListPreview li').count(),5);
+   const bounds=await page.locator('#pasteListDialog').evaluate(e=>({w:e.getBoundingClientRect().width,client:e.clientWidth,scroll:e.scrollWidth}));assert.ok(bounds.w<=viewport.width);assert.ok(bounds.scroll<=bounds.client+1,'No horizontal scroll in paste dialog');
+   await page.screenshot({path:path.join(out,'paste-preview-'+viewport.width+'.png')});await page.locator('#savePasteList').click();assert.equal((await state(page)).roster.length,5);
+   await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('Q'.repeat(41));assert.equal(await page.locator('#savePasteList').isDisabled(),true);assert.match(await page.locator('#pasteListError').textContent(),/40 characters/);await page.locator('#cancelPasteList').click();
+  }
+  await seed(page,fixture({roster:Array.from({length:29},(_,i)=>'QA '+i),present:[],history:[]}));await page.locator('#classHotspot').click();await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('QA Overflow One\nQA Overflow Two');assert.equal(await page.locator('#savePasteList').isDisabled(),true);assert.equal((await state(page)).roster.length,29);
+  await page.locator('#pastedNames').fill('QA Final');await page.locator('#savePasteList').click();assert.equal((await state(page)).roster.length,30);
+ });
+ await scenario('paste list storage failure shows unsaved session state without losing existing data',async(page)=>{
+  await seed(page,fixture());const before=await state(page),raw=await page.evaluate(key=>localStorage.getItem(key),KEY);
+  await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new DOMException('Full','QuotaExceededError');};});await page.locator('#classHotspot').click();await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('QA Unsaved One\nQA Unsaved Two');await page.locator('#savePasteList').click();
+  assert.equal(await page.locator('#storageWarning').isVisible(),true);assert.equal(await page.locator('#autosaveText').textContent(),'Not saved');assert.match(await page.locator('#toast').textContent(),/only in this session/);assert.equal(await page.evaluate(key=>localStorage.getItem(key),KEY),raw);assert.deepEqual((await state(page)).present,before.present);assert.equal((await state(page)).roster.length,5);
  });
  await scenario('Apple Orchard full-class physical taps reach every child, with accessible names',async(page)=>{
   for(const size of [10,15,20,25,30]){

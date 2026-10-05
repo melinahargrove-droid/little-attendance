@@ -129,3 +129,82 @@ test('failed Apple fallback redraws generic Undo and Reset controls',async()=>{
 test('dashboard preserves visible fallback controls until successful image load',()=>{
  const a=create();const stage=a.node('.dashboard-stage');assert.equal(stage.classList.contains('art-ready'),false);a.run('dashboardArt.onload()');assert.equal(stage.classList.contains('art-ready'),true);a.run('dashboardArt.onerror()');assert.equal(stage.classList.contains('art-ready'),false);a.node('#takeHotspot').click();assert.ok(a.node('#attendance').classList.contains('active'));
 });
+
+function paste(a,text){
+ a.node('#pasteListBtn').click();a.node('#pastedNames').value=text;
+ a.node('#pastedNames').dispatchEvent(new a.w.Event('input'));
+}
+function submitPaste(a){a.node('#pasteListForm').dispatchEvent(new a.w.Event('submit',{cancelable:true}));}
+test('bulk preview and cancel never mutate or save the existing classroom',()=>{
+ const a=create(),before=a.state(),raw=a.store.get(KEY);
+ paste(a," QA Renée \r\n\n QA O’Neil \rQA Anne-Marie\n  ");
+ assert.equal(a.node('#pasteListPreview').children.length,3);
+ assert.equal(a.node('#pasteListPreview').children[0].textContent,'QA Renée');
+ assert.match(a.node('#pasteListCount').textContent,/3 friends to add/);
+ assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);assert.equal(a.store.has(BACKUP),false);
+ a.node('#cancelPasteList').click();submitPaste(a);assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);
+ a.node('#pasteListBtn').click();assert.equal(a.node('#pastedNames').value,'');assert.equal(a.node('#savePasteList').disabled,true);
+ a.node('#pasteListDialog').dispatchEvent(new a.w.Event('cancel'));a.node('#pasteListDialog').close();assert.deepEqual(a.state(),before);
+});
+test('bulk append preserves all existing IDs, attendance, undo, extras and migration backup across reload',()=>{
+ const old=fixture({extra:'kept'}),a=create(old),before=a.state(),raw=a.store.get(KEY);
+ paste(a," QA Renée \r\n\n QA O’Neil \rQA Anne-Marie\n  ");submitPaste(a);
+ const after=a.state();assert.deepEqual(after.roster.slice(0,3),before.roster);
+ assert.deepEqual(after.roster.slice(3).map(c=>c.name),['QA Renée','QA O’Neil','QA Anne-Marie']);
+ assert.equal(new Set(after.roster.map(c=>c.id)).size,6);assert.deepEqual(after.present,before.present);assert.deepEqual(after.history,before.history);assert.equal(after.extra,'kept');
+ assert.equal(a.store.get(BACKUP),raw);submitPaste(a);assert.deepEqual(a.state(),after);
+ const b=create(null,{store:a.store});assert.deepEqual(b.state(),after);b.node('#undoBtn').click();assert.deepEqual(namesHere(b),['QA Alpha']);
+});
+test('bulk duplicates require explicit review, retain separate identities and reset review after edits',()=>{
+ const a=create();paste(a,'QA Alpha\nQA Same\nQA Same\nqa alpha');
+ assert.equal(a.node('#pasteListDuplicateReview').hidden,false);assert.equal(a.node('#savePasteList').disabled,true);
+ assert.match(a.node('#pasteListPreview').textContent,/already in class/);assert.match(a.node('#pasteListPreview').textContent,/repeated in this list/);
+ submitPaste(a);assert.equal(a.state().roster.length,3);
+ a.node('#confirmDuplicateNames').checked=true;a.node('#confirmDuplicateNames').dispatchEvent(new a.w.Event('change'));
+ assert.equal(a.node('#savePasteList').disabled,false);
+ a.node('#pastedNames').dispatchEvent(new a.w.Event('input'));assert.equal(a.node('#confirmDuplicateNames').checked,false);
+ a.node('#confirmDuplicateNames').checked=true;submitPaste(a);
+ assert.equal(a.state().roster.length,7);assert.equal(new Set(a.state().roster.map(c=>c.id)).size,7);
+ assert.deepEqual(a.state().roster.slice(3).map(c=>c.name),['QA Alpha','QA Same','QA Same','qa alpha']);
+});
+test('bulk blank input, overlong names and class-limit overflow are blocked without partial adds or truncation',()=>{
+ const a=create(),before=a.state(),raw=a.store.get(KEY);
+ paste(a,' \n\t\r\n ');submitPaste(a);assert.deepEqual(a.state(),before);assert.equal(a.node('#savePasteList').disabled,true);
+ a.node('#pastedNames').value='QA '+ 'x'.repeat(38);a.node('#pastedNames').dispatchEvent(new a.w.Event('input'));submitPaste(a);
+ assert.match(a.node('#pasteListError').textContent,/40 characters/);assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);
+ a.node('#pastedNames').value='QA '+ 'x'.repeat(37);a.node('#pastedNames').dispatchEvent(new a.w.Event('input'));submitPaste(a);assert.equal(a.state().roster[3].name.length,40);
+ const b=create(fixture({roster:Array.from({length:29},(_,i)=>'QA '+i)})),original=b.state();
+ paste(b,'QA Extra One\nQA Extra Two');submitPaste(b);assert.deepEqual(b.state(),original);assert.match(b.node('#pasteListError').textContent,/room for 1 more friend/);
+ b.node('#pastedNames').value='QA Extra One';b.node('#pastedNames').dispatchEvent(new b.w.Event('input'));submitPaste(b);assert.equal(b.state().roster.length,30);
+ paste(b,'QA Thirty-one');submitPaste(b);assert.equal(b.state().roster.length,30);assert.match(b.node('#pasteListError').textContent,/room for 0/);
+});
+test('bulk input preserves punctuation and literal markup in preview and saved roster',()=>{
+ const a=create(null);const names=['QA Renée-José','QA O\'Neil','QA Last, First','<b>QA Literal</b>','QA & Friend'];
+ paste(a,names.join('\n'));assert.deepEqual(Array.from(a.node('#pasteListPreview').children,c=>c.textContent),names);
+ assert.equal(a.d.querySelectorAll('#pasteListPreview b').length,0);submitPaste(a);
+ assert.deepEqual(a.state().roster.map(c=>c.name),names);assert.equal(a.d.querySelectorAll('#friendGrid b').length,0);
+ assert.deepEqual(a.state().present,[]);assert.deepEqual(a.state().history,[]);
+});
+test('bulk storage failure retains one session copy, truthful warning and exact stored bytes, then saves safely',()=>{
+ const a=create(fixture(),{failWrite:true}),raw=a.store.get(KEY);paste(a,'QA Unsaved One\nQA Unsaved Two');submitPaste(a);
+ const after=a.state();assert.equal(after.roster.length,5);assert.equal(a.store.get(KEY),raw);
+ assert.equal(a.node('#storageWarning').hidden,false);assert.equal(a.node('#autosaveText').textContent,'Not saved');assert.match(a.node('#toast').textContent,/only in this session/);
+ submitPaste(a);assert.deepEqual(a.state(),after);a.failWrite(false);assert.equal(a.run('save()'),true);
+ assert.equal(a.store.get(BACKUP),raw);assert.deepEqual(create(null,{store:a.store}).state(),after);
+});
+test('bulk revalidates capacity on submit and protects a newer saved tab',()=>{
+ const a=create(fixture({roster:Array.from({length:29},(_,i)=>'QA '+i)}));paste(a,'QA New');
+ a.run('data.roster.push({id:newChildId(),name:"QA Concurrent"})');submitPaste(a);assert.equal(a.state().roster.length,30);assert.equal(a.state().roster.some(c=>c.name==='QA New'),false);
+ const b=create(),c=create(null,{store:b.store});paste(c,'QA Stale');edit(b,'QA Saved In Other Tab');const newer=b.store.get(KEY);submitPaste(c);
+ assert.equal(b.store.get(KEY),newer);assert.match(c.node('#storageWarning').textContent,/another tab/);assert.equal(c.state().roster.filter(c=>c.name==='QA Stale').length,1);
+});
+
+
+test('Attendance Controls replaces Teacher Mode while keeping the same daily actions',async()=>{
+ const a=create();assert.equal(a.node('#teacherHotspot').getAttribute('aria-label'),'Attendance Controls');
+ for(const id of ['teacherHotspot','classroomTeacher','themesTeacher','teacherBtn']){
+  assert.match(a.node('#'+id).textContent,/Attendance\s*Controls/);a.node('#'+id).click();assert.equal(a.node('#teacherDialog').open,true);a.node('#closeTeacher').click();
+ }
+ assert.doesNotMatch(a.d.body.textContent,/Teacher Mode/);assert.equal(a.node('#undoBtn').textContent,'Undo');assert.equal(a.node('#resetBtn').textContent,'Reset');assert.equal(a.node('#fullscreenBtn').textContent,'Full Screen');
+ a.run('data.selectedTheme="apple-orchard";openAttendance()');await settle();assert.equal(a.node('#appleTeacher').textContent,'Attendance Controls');
+});

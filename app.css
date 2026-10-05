@@ -50,6 +50,15 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif}
 #takeHotspot{left:11.2%;top:37.2%;width:40.3%;height:52.4%}
 #classHotspot{left:52.6%;top:37.2%;width:34.7%;height:25.5%}
 #teacherHotspot{left:52.6%;top:64.8%;width:34.7%;height:25.1%}
+/* Replace only the old title painted into the approved dashboard artwork. */
+.dashboard-stage.art-ready .dashboard-control-label{
+  position:absolute;left:36%;top:21%;width:49%;height:55%;
+  display:grid;align-content:center;border-radius:8px;
+  background:#e9f3e6;color:var(--navy);
+  font-family:Georgia,"Times New Roman",serif;font-weight:700;
+  font-size:min(2.5vw,4.444vh);line-height:1.1;text-align:left;padding-left:3%;
+}
+
 
 /* SHARED PAGE SHELL */
 .page{min-height:100%;padding:30px;background:linear-gradient(180deg,#fbf8f1,#f7f3eb)}
@@ -492,6 +501,31 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
 }
 .preview-avatar{width:48px;height:48px}
 .friend-dialog-actions{justify-content:flex-end}
+
+/* Bulk roster entry stays separate from saved classroom data until Add. */
+.friends-heading{flex-wrap:wrap}
+.friend-add-actions{display:flex;gap:10px;flex-wrap:wrap}
+.paste-list-modal h2{font-size:30px;margin:0 0 12px}
+.paste-list-modal p{line-height:1.45}
+.paste-list-modal label{display:block;font-weight:700;margin-bottom:8px}
+.paste-list-modal textarea{min-height:120px;line-height:1.5}
+.paste-list-preview{margin-top:20px;padding:16px;background:#f8f4ec;border-radius:16px}
+.paste-list-preview h3{margin:0;font-size:22px}
+.paste-list-preview p{margin:6px 0;font-size:14px}
+#pasteListPreview{max-height:200px;overflow:auto;overscroll-behavior:contain;padding-left:28px;margin:12px 0 0}
+#pasteListPreview:empty{display:none}
+#pasteListPreview li{padding:4px 6px;overflow-wrap:anywhere;white-space:pre-wrap}
+#pasteListPreview small{display:block;color:#7b4930;font-size:12px;margin-top:3px}
+.paste-list-error{color:#8a3b33;font-weight:700}
+.paste-list-modal .paste-list-duplicate-review{display:flex;gap:10px;align-items:flex-start;line-height:1.45;font-size:14px;margin-top:16px}
+.paste-list-duplicate-review input{width:20px;height:20px;flex:none;margin:0}
+.paste-list-modal [hidden]{display:none}
+#savePasteList:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:450px){
+  .paste-list-modal{padding:22px 18px}
+  .paste-list-modal h2{font-size:26px}
+  .paste-list-modal .actions button{flex:1}
+}
 
 @media(max-width:1000px){
   .classroom-shell{grid-template-columns:1fr}

@@ -18,6 +18,23 @@ For browser-engine checks, run `npx playwright install chromium` and
 that engine. CI runs both engines with fictional QA rosters on localhost;
 it does not access the deployed classroom or deploy the branch.
 
+## Add a class list
+
+In **My Classroom**, choose **Paste a list** next to **Add a Friend**.
+Paste one name per line and review the count and preview, then choose
+**Add friends to class**. Blank lines and leading/trailing spaces are ignored.
+Names are added at the end; existing children, their stable IDs, attendance
+and undo history remain unchanged. Cancel or Escape leaves the class as it was.
+Individual add/edit controls are still available.
+
+The list must fit the existing limit of 30 friends, with at most 40 characters
+per new name. Over-limit lists are blocked as a whole; no names are silently
+truncated or partially added. Matching names are marked for review and require
+an explicit checkbox before adding. Every line remains a separate child,
+including two children who share a name. Nothing is uploaded by pasting a list.
+If browser storage fails, the added friends remain in the current session with
+a visible **Not saved** warning; keep the tab open until saving works again.
+
 ## Saved-classroom upgrade
 
 This repair retains `littleAttendanceCleanV4` as the browser storage key.
