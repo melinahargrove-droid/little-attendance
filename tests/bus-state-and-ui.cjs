@@ -108,3 +108,10 @@ test('overflow fitting chooses readable rows inside the same shelter and caches 
  assert.ok(Number(grid.dataset.fitWidth)>100);assert.ok(Number(grid.dataset.fit)>.75);assert.ok(Math.max(11,parseFloat(grid.style.getPropertyValue('--bus-la-name-floor')))*.95*Number(grid.dataset.fit)>=7.59);
  const before=measurements,fit=grid.dataset.fit;click(a,'busWaitingLayer','qa-2');assert.equal(grid.dataset.fit,fit);assert.equal(measurements,before,'arrival does not remeasure or reposition slots');
 });
+
+test('readable labels retain a separate hidden source footprint and full literal accessible name',()=>{
+ const name='QA Amara Washington',a=create(fixture(1,{roster:[{id:'qa-0',name}]}));a.run('openAttendance()');
+ const button=a.node('#busWaitingLayer button'),slot=button.querySelector('.bus-la-label-slot');
+ assert.equal(slot.querySelector('.bus-la-name').textContent,name);assert.equal(slot.querySelector('.bus-la-name-measure').textContent,name);assert.equal(slot.querySelector('.bus-la-name-measure').getAttribute('aria-hidden'),'true');assert.equal(button.getAttribute('aria-label'),'Mark here '+name);
+ const css=fs.readFileSync(path.join(root,'bus-adapter.css'),'utf8');assert.match(css,/\.bus-la-child \.bus-la-label-slot \.bus-la-name\{position:absolute/);assert.match(css,/\.bus-la-name-measure\{display:block;visibility:hidden;pointer-events:none\}/);
+});

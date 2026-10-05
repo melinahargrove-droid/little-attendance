@@ -17,24 +17,25 @@
 .bus-la-avatar{container-type:size;position:relative;width:58px;height:58px;flex:0 0 auto;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#fffaf4;border:3px solid #fff;box-shadow:0 2px 6px rgba(30,50,65,.14)}
 .bus-la-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .bus-la-initial{font:700 min(28px,45cqw)/1 Georgia,serif;color:#123554}
-.bus-la-name{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;--bus-la-name-size:11px;font-size:max(var(--bus-la-name-size),var(--bus-la-name-floor,0px));line-height:1}
+.bus-la-name,.bus-la-name-measure{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;--bus-la-name-size:11px;font-size:max(var(--bus-la-name-size),var(--bus-la-name-floor,0px));line-height:1}
 .bus-la-tier-xs .bus-la-wait-grid{gap:18px 16px}
 .bus-la-tier-xs .waiting .bus-la-avatar{width:76px;height:76px}
-.bus-la-tier-xs .waiting .bus-la-name{--bus-la-name-size:13px;max-width:90px}
+.bus-la-tier-xs .waiting .bus-la-name,.bus-la-tier-xs .waiting .bus-la-name-measure{--bus-la-name-size:13px;max-width:90px}
 .bus-la-tier-sm .bus-la-wait-grid{gap:14px 12px}
 .bus-la-tier-sm .waiting .bus-la-avatar{width:66px;height:66px}
 .bus-la-tier-md .bus-la-wait-grid{gap:10px 9px}
 .bus-la-tier-lg .bus-la-wait-grid{gap:7px 6px;padding:5px 4px}
 .bus-la-tier-lg .waiting .bus-la-avatar{width:52px;height:52px}
-.bus-la-tier-lg .waiting .bus-la-name{--bus-la-name-size:9px;max-width:62px}
+.bus-la-tier-lg .waiting .bus-la-name,.bus-la-tier-lg .waiting .bus-la-name-measure{--bus-la-name-size:9px;max-width:62px}
 .bus-la-tier-xl .bus-la-wait-grid{gap:5px 4px;padding:4px 2px}
 .bus-la-tier-xl .waiting{flex:0 0 calc(16.666% - 5px)}
 .bus-la-tier-xl .waiting .bus-la-avatar{width:46px;height:46px}
-.bus-la-tier-xl .waiting .bus-la-name{--bus-la-name-size:8px;max-width:min(54px,100%)}
+.bus-la-tier-xl .waiting .bus-la-name,.bus-la-tier-xl .waiting .bus-la-name-measure{--bus-la-name-size:8px;max-width:min(54px,100%)}
 .bus-la-window{position:absolute;left:40.8%;top:36.1%;width:51.8%;height:20.188%;transform:translate(0px,15px);transform-origin:center center;overflow:hidden;pointer-events:none}
 .bus-la-riders{position:absolute;left:0;top:50%;width:100%;height:100%;transform:translate(0px,-50%);transform-origin:center center;box-sizing:border-box;overflow:hidden;display:grid;align-items:center;justify-items:center;align-content:center;justify-content:center;padding:5px 8px;grid-auto-rows:minmax(0,1fr)}
 .bus-la-riders .bus-la-child{width:100%;height:100%;min-width:0;min-height:0;flex:none;padding:0;margin:0;border:0;background:transparent;box-shadow:none;justify-content:center;gap:0;overflow:hidden}
 .bus-la-riders .bus-la-avatar{border-radius:9px;border:2px solid rgba(255,255,255,.96);box-sizing:border-box;box-shadow:0 2px 5px rgba(18,53,84,.14)}
+.bus-la-riders .bus-la-label-slot{display:none}
 .bus-la-riders .bus-la-name{display:none}
 .bus-la-load-1 .bus-la-riders{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:1fr;gap:6px 9px}
 .bus-la-load-1 .aboard .bus-la-avatar{width:72px;height:72px}
@@ -65,3 +66,8 @@
 .bus-la-load-4 .waiting .bus-la-avatar{width:58px;height:58px}
 .bus-la-tier-lg .waiting .bus-la-avatar{width:52px;height:52px}
 .bus-la-tier-xl .waiting .bus-la-avatar{width:46px;height:46px}
+
+/* Readable names keep the verified source-size measuring footprint. */
+.bus-la-label-slot{position:relative;max-width:100%;min-width:0}
+.bus-la-name-measure{display:block;visibility:hidden;pointer-events:none}
+.bus-la-child .bus-la-label-slot .bus-la-name{position:absolute;left:50%;top:0;width:var(--bus-la-label-width,100%);max-width:none;transform:translateX(-50%);font-size:max(var(--bus-la-name-size),var(--bus-la-visible-name-floor,0px))}

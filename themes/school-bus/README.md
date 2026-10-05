@@ -28,9 +28,12 @@ Two old implementation problems are intentionally corrected:
 The original shelter and its approved translate/scale remain unchanged. If a
 landscape viewport or long names would overflow, a centered inner fit adjustment
 keeps the full roster inside that shelter. A bounded inner-width search avoids
-unnecessary shrinking, and scaled labels retain at least the original 7.6px
-effective minimum. Initials fit within their existing avatar boxes. The source
-layout stays unchanged whenever it fits. This adjustment measures all slots,
+unnecessary shrinking. Source-size hidden labels preserve the verified layout
+footprint while visible names use at least 12px effective text, fitted into the
+existing row gaps with ellipsis. Photo/button positions are checked against
+prior Chromium/WebKit geometry fixtures; names cannot overlap another portrait.
+Initials fit within their existing avatar boxes. The source layout stays
+unchanged whenever it fits. This adjustment measures all slots,
 including placeholders, so it does not change on attendance actions. Names keep
 the source's single-line ellipsis and a complete accessible button label.
 

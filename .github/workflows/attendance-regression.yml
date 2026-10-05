@@ -68,3 +68,13 @@ jobs:
         with:
           name: bus-portrait-${{ matrix.browser }}-${{ github.sha }}
           path: test-results/bus-portrait-*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bus-readable-1280-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/bus-readable-1280-*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bus-readable-1024-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/bus-readable-1024-*.png

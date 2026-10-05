@@ -44,7 +44,11 @@ function piece(child,here,index){
     avatar.appendChild(img);
   }
   const label=document.createElement('strong');label.className='bus-la-name';label.textContent=child.name;
-  button.append(avatar,label);
+  const labelSlot=document.createElement('span');labelSlot.className='bus-la-label-slot';
+  // Reserve the already-verified source footprint. The visible label can grow
+  // into the existing row gap without moving any portrait or attendance slot.
+  const measure=document.createElement('strong');measure.className='bus-la-name-measure';measure.textContent=child.name;measure.setAttribute('aria-hidden','true');
+  labelSlot.append(measure,label);button.append(avatar,labelSlot);
   button.onclick=()=>{
     if(button.disabled || !button.isConnected)return;
     const focused=document.activeElement===button;
@@ -95,6 +99,8 @@ function fitWaiting(){
     best.fit=fit;
   }
   if(best.fit<.999)grid.style.setProperty('--bus-la-name-floor',(8/best.fit)+'px');
+  grid.style.setProperty('--bus-la-visible-name-floor',(12/(.95*best.fit))+'px');
+  nodes.forEach(node=>node.style.setProperty('--bus-la-label-width',Math.max(0,node.clientWidth-2)+'px'));
   grid.style.transform=`translateX(-50%) scale(${best.fit})`;
   grid.dataset.fit=String(best.fit);grid.dataset.fitWidth=String(best.width);
 }
