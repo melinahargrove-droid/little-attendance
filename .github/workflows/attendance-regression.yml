@@ -36,6 +36,10 @@ jobs:
         env:
           BROWSER: ${{ matrix.browser }}
           TARGET_URL: ${{ (inputs.live || github.event_name == 'workflow_run') && 'https://melinahargrove-droid.github.io/little-attendance/' || '' }}
+      - run: node tests/bfcache-browser.cjs
+        if: matrix.browser == 'chromium'
+        env:
+          TARGET_URL: ${{ (inputs.live || github.event_name == 'workflow_run') && 'https://melinahargrove-droid.github.io/little-attendance/' || '' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
