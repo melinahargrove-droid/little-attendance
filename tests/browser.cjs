@@ -31,12 +31,14 @@ const server=http.createServer((req,res)=>{
  const browser=await browserType.launch({headless:true});
  const results=[];
  async function scenario(name,fn){const context=await browser.newContext({viewport:{width:1280,height:720}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await context.route('**/*',route=>route.request().url().startsWith(url)?route.continue():route.abort());try{await fn(page,context);assert.deepEqual(errors,[],name+' has no page errors');results.push({name,pass:true});console.log('PASS '+name);}finally{await context.close();}}
- const seed=async(page,value)=>{await page.goto(url);await page.evaluate(({KEY,value})=>{localStorage.setItem(KEY,JSON.stringify(value));},{KEY,value});await page.reload();};
+ const seed=async(page,value)=>{await page.goto(url);await page.evaluate(({KEY,value})=>{localStorage.setItem(KEY,JSON.stringify(value));},{KEY,value});await page.reload();await page.evaluate(()=>{acknowledgedAttendanceDay=localAttendanceDate();});};
  const state=page=>page.evaluate(()=>JSON.parse(JSON.stringify(data)));
  const namesHere=async page=>{const s=await state(page);return s.roster.filter(c=>s.present.includes(c.id)).map(c=>c.name).sort();};
  try{
  await require('./bus-browser.cjs')({scenario,seed,state,out});
  await require('./bus-label-review.cjs')({scenario,seed,state,out});
+ await require('./storage-browser.cjs')({scenario,seed,state,out});
+ await require('./attendance-days-browser.cjs')({scenario,seed,state,out});
  await scenario('approved home art, three controls, keyboard, navigation and resize',async(page)=>{
   await seed(page,fixture());const image=await page.locator('.dashboard-stage').evaluate(async el=>{const css=getComputedStyle(el).backgroundImage;const img=new Image();img.src=css.slice(5,-2);await img.decode();return{width:img.naturalWidth,height:img.naturalHeight};});assert.deepEqual(image,{width:1920,height:1080});
   assert.equal(await page.locator('#teacherHotspot').getAttribute('aria-label'),'Attendance Controls');assert.notEqual(await page.locator('.dashboard-control-label').evaluate(e=>getComputedStyle(e).color),'rgba(0, 0, 0, 0)');await page.screenshot({path:path.join(out,'home-desktop.png')});
@@ -60,7 +62,7 @@ const server=http.createServer((req,res)=>{
   await page.getByRole('button',{name:'Edit QA Alpha',exact:true}).click();await page.locator('#friendName').fill('QA Alpha Renamed');await page.locator('#saveFriend').click();
   await page.getByRole('button',{name:'Move QA Gamma up',exact:true}).click();page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Remove QA Beta',exact:true}).click();assert.deepEqual(await namesHere(page),['QA Alpha Renamed','QA Gamma']);
   assert.equal(await page.evaluate(key=>localStorage.getItem(key),BACKUP),original);
-  await page.reload();await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha Renamed']);await page.locator('#closeTeacher').click();
+  await page.reload();await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,4);assert.deepEqual(await namesHere(page),['QA Alpha Renamed','QA Gamma']);await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,3);await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha Renamed']);await page.locator('#closeTeacher').click();
   await page.locator('#classHotspot').click();await page.locator('#className').fill('QA Immediate Reload');await page.reload();assert.equal((await state(page)).className,'QA Immediate Reload');
  });
  await scenario('paste list preview, cancel, Escape, append, duplicates, reload and undo',async(page)=>{
@@ -73,7 +75,7 @@ const server=http.createServer((req,res)=>{
   const added=await state(page);assert.deepEqual(added.roster.slice(0,3),before.roster);assert.deepEqual(added.present,before.present);assert.deepEqual(added.history,before.history);assert.equal(added.roster.length,6);assert.equal(new Set(added.roster.map(c=>c.id)).size,6);assert.equal(await page.evaluate(key=>localStorage.getItem(key),BACKUP),raw);
   await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('QA Alpha\nQA Same\nQA Same');assert.equal(await page.locator('#savePasteList').isDisabled(),true);assert.equal(await page.locator('#pasteListPreview small').count(),3);
   await page.screenshot({path:path.join(out,'paste-duplicate-review.png')});await page.locator('#confirmDuplicateNames').check();await page.locator('#savePasteList').click();assert.equal((await state(page)).roster.length,9);assert.equal(new Set((await state(page)).roster.map(c=>c.id)).size,9);
-  await page.reload();assert.equal((await state(page)).roster.length,9);await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha']);
+  await page.reload();assert.equal((await state(page)).roster.length,9);await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,6);await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,3);await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha']);
  });
  await scenario('paste list responsive preview, long names, limits and literal text',async(page)=>{
   for(const viewport of [{width:1280,height:720},{width:1024,height:768},{width:768,height:1024},{width:390,height:844},{width:320,height:568}]){
@@ -124,11 +126,11 @@ const server=http.createServer((req,res)=>{
   }
  });
  await scenario('blocked storage stays usable and cannot report a successful save',async(page)=>{
-  await page.addInitScript(()=>{Storage.prototype.setItem=function(){throw new DOMException('Full','QuotaExceededError');};});await page.goto(url);await page.locator('#classHotspot').click();await page.locator('#addFriendBtn').click();await page.locator('#friendName').fill('QA Unsaved');await page.locator('#saveFriend').click();assert.equal(await page.locator('#storageWarning').isVisible(),true);assert.equal(await page.locator('#autosaveText').textContent(),'Not saved');await page.locator('#classroomAttendance').click();assert.equal(await page.locator('#busWaitingLayer button').count(),1);
+  await page.addInitScript(()=>{Storage.prototype.setItem=function(){throw new DOMException('Full','QuotaExceededError');};});await page.goto(url);await page.locator('#classHotspot').click();await page.locator('#addFriendBtn').click();await page.locator('#friendName').fill('QA Unsaved');await page.locator('#saveFriend').click();assert.equal(await page.locator('#storageWarning').isVisible(),true);assert.equal(await page.locator('#autosaveText').textContent(),'Not saved');await page.evaluate(()=>{acknowledgedAttendanceDay=localAttendanceDate();});await page.locator('#classroomAttendance').click();assert.equal(await page.locator('#busWaitingLayer button').count(),1);
  });
  await scenario('slow Apple config cannot reopen after Close and failed fetch has usable fallback',async(page,context)=>{
   let release,started;const requested=new Promise(resolve=>{started=resolve;});await context.route('**/theme-config.json',async route=>{await new Promise(r=>{release=r;started();});await route.continue();});await seed(page,fixture({selectedTheme:'apple-orchard'}));await page.locator('#takeHotspot').click();await page.waitForFunction(()=>document.querySelector('#appleAttendance.active'));await page.locator('#appleClose').click();await requested;release();await page.waitForLoadState('networkidle');assert.equal(await page.locator('#dashboard.active').count(),1);
-  await context.unroute('**/theme-config.json');await context.route('**/theme-config.json',route=>route.abort());await page.reload();await page.locator('#takeHotspot').click();await page.locator('#attendance.active').waitFor();assert.equal(await page.locator('#studentGrid button').count(),3);await page.locator('#teacherBtn').click();await page.locator('#undoBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'1');page.once('dialog',d=>d.accept());await page.locator('#resetBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'0');
+  await context.unroute('**/theme-config.json');await context.route('**/theme-config.json',route=>route.abort());await page.reload();await page.evaluate(()=>{acknowledgedAttendanceDay=localAttendanceDate();});await page.locator('#takeHotspot').click();await page.locator('#attendance.active').waitFor();assert.equal(await page.locator('#studentGrid button').count(),3);await page.locator('#teacherBtn').click();await page.locator('#undoBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'1');page.once('dialog',d=>d.accept());await page.locator('#resetBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'0');
  });
  }finally{
   fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify({engine:process.env.BROWSER||'chromium',scope:process.env.TARGET_URL?'Published Pages app in fresh isolated browser contexts; fictional QA rosters only':'Isolated localhost; fictional QA rosters only',results},null,2));await browser.close();server.close();

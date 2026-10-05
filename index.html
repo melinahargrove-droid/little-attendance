@@ -10,7 +10,7 @@
 </head>
 <body>
 <div class="app">
-<div id="storageWarning" class="storage-warning" role="alert" hidden></div>
+<div id="storageWarning" class="storage-warning" role="alert" hidden><span id="storageWarningText"></span> <button type="button" id="retrySave" class="secondary" hidden>Try saving again</button></div>
 
 <section id="dashboard" class="screen active">
   <div class="dashboard-stage" aria-label="Little Attendance dashboard">
@@ -224,16 +224,48 @@
   <div class="modal">
     <div class="eyebrow">Attendance Controls</div>
     <h2>Attendance Controls</h2>
+    <div class="attendance-day-summary"><strong id="attendanceDayLabel">Undated attendance</strong><button type="button" id="startTodayBtn" class="secondary">Start today…</button></div>
     <div class="actions">
       <button id="undoBtn" class="secondary">Undo</button>
       <button id="resetBtn" class="danger">Reset</button>
       <button id="fullscreenBtn" class="secondary">Full Screen</button>
     </div>
+    <section class="attendance-history-settings" aria-label="Saved attendance">
+      <label class="history-toggle"><input type="checkbox" id="saveAttendanceHistory"><strong>Save attendance history</strong></label>
+      <p id="historyState" class="small"></p>
+      <p class="small">Records stay in this browser on this device. Clearing browser data can erase them. This is not a backup or cross-device storage.</p>
+      <button type="button" id="viewAttendanceHistory" class="secondary">View saved attendance (0)</button>
+    </section>
     <div class="actions" style="justify-content:flex-end">
       <button id="closeTeacher" class="primary">Done</button>
     </div>
   </div>
 </dialog>
+
+<dialog id="newDayDialog" aria-labelledby="newDayTitle" aria-describedby="newDayMessage newDayHistoryMessage">
+  <div class="modal">
+    <h2 id="newDayTitle">Start a new day?</h2>
+    <p id="newDayMessage"></p>
+    <p id="newDayHistoryMessage"></p>
+    <div class="actions"><button type="button" id="keepCurrentDay" class="secondary" autofocus>Keep current attendance</button><button type="button" id="startNewDay" class="primary">Start today</button></div>
+  </div>
+</dialog>
+
+<dialog id="attendanceHistoryDialog" aria-labelledby="attendanceHistoryTitle">
+  <div class="modal attendance-history-modal">
+    <h2 id="attendanceHistoryTitle">Saved attendance</h2>
+    <p class="small">Saved in this browser only. Print a record to keep a separate copy. Earlier dates keep their saved names.</p>
+    <label for="attendanceRecordList">Choose a saved record</label>
+    <select id="attendanceRecordList"></select>
+    <p id="attendanceHistoryEmpty">No attendance records saved yet. Turn on Save attendance history to keep records automatically.</p>
+    <div class="attendance-history-scroll">
+      <h3 id="savedAttendanceDate"></h3>
+      <table id="attendanceHistoryTable"><thead><tr><th scope="col">Name</th><th scope="col">Attendance</th></tr></thead><tbody id="attendanceHistoryRows"></tbody></table>
+    </div>
+    <div class="actions"><button type="button" id="printAttendanceRecord" class="secondary">Print record</button><button type="button" id="closeAttendanceHistory" class="primary">Back to controls</button></div>
+  </div>
+</dialog>
+<div id="attendancePrint" aria-hidden="true"></div>
 
 <input id="themeFile" type="file" accept=".littletheme,.json" hidden>
 

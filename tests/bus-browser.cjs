@@ -40,7 +40,7 @@ module.exports=async function({scenario,seed,state,out}){
     await page.getByRole('button',{name:'Return QA Friend 01',exact:true}).click();assertFixed(before,await boxes(page));assert.equal((await state(page)).present.length,n-1);
     await page.getByRole('button',{name:'Mark here QA Friend 01',exact:true}).click();await page.locator('#busTeacher').click();await page.locator('#undoBtn').click();await page.locator('#closeTeacher').click();assert.equal((await state(page)).present.includes('bus-qa-0'),false);assertFixed(before,await boxes(page));
     await page.locator('#busClose').click();assert.equal(await page.locator('#dashboard.active').count(),1);await page.locator('#takeHotspot').click();assert.equal(await page.locator('#busHereCount').textContent(),String(n-1));
-    await page.reload();await page.locator('#takeHotspot').click();assert.equal(await page.locator('#busHereCount').textContent(),String(n-1));
+    await page.reload();await page.locator('#takeHotspot').click();await page.locator('#keepCurrentDay').click();assert.equal(await page.locator('#busHereCount').textContent(),String(n-1));
     await page.locator('#busTeacher').click();page.once('dialog',d=>d.accept());await page.locator('#resetBtn').click();assert.equal(await page.locator('#busHereCount').textContent(),'0');assert.equal((await state(page)).history.length,0);
    }
   }
@@ -68,6 +68,6 @@ module.exports=async function({scenario,seed,state,out}){
   await seed(page,seedData);await page.locator('#takeHotspot').click();assert.equal(await page.locator('#busWaitingLayer .bus-la-name').first().textContent(),seedData.roster[0].name);assert.equal(await page.evaluate(()=>window.QAInjected),undefined);assert.equal(await page.locator('.bus-la-avatar img').count(),0);
   await page.locator(visible('busWaitingLayer')).first().focus();await page.keyboard.press('Enter');assert.equal((await state(page)).present.length,1);assert.equal(await page.evaluate(()=>document.activeElement.classList.contains('aboard')),true);await page.keyboard.press('Space');assert.equal((await state(page)).present.length,0);
   await page.locator('#busClose').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#dashboard.active').count(),1);
-  await context.route('**/themes/school-bus/background.png',route=>route.abort());await page.reload();await page.locator('#takeHotspot').click();await page.locator('#attendance.active').waitFor();assert.equal(await page.locator('#studentGrid button').count(),2);await page.locator('#studentGrid button').first().click();await page.locator('#teacherBtn').click();await page.locator('#undoBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'0');
+  await context.route('**/themes/school-bus/background.png',route=>route.abort());await page.reload();await page.locator('#takeHotspot').click();await page.locator('#keepCurrentDay').click();await page.locator('#attendance.active').waitFor();assert.equal(await page.locator('#studentGrid button').count(),2);await page.locator('#studentGrid button').first().click();await page.locator('#teacherBtn').click();await page.locator('#undoBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'0');
  });
 };

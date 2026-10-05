@@ -25,6 +25,7 @@ function create(saved=fixture(),options={}){
  w.fetch=options.fetch|| (async()=>({ok:true,json:async()=>config}));
  const run=source=>vm.runInContext(source,dom.getInternalVMContext());
  run(app);run(adapter);
+ run("acknowledgedAttendanceDay=localAttendanceDate()");
  return {w,d,run,store,node:selector=>d.querySelector(selector),state:()=>JSON.parse(run('JSON.stringify(data)')),failWrite:value=>{failWrite=value},failRead:value=>{failRead=value}};
 }
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
@@ -43,7 +44,7 @@ test('original approved dashboard image and all three usable targets are preserv
 test('legacy migration preserves classroom, duplicate names, order, attendance, themes, extras and original bytes',()=>{
  const old=fixture({roster:['QA Same','QA Same','QA Third'],ownedThemes:['school-bus','fall-leaves'],extraSetting:'kept'}),raw=JSON.stringify(old);
  const a=create(raw),s=a.state();assert.equal(a.store.get(KEY),raw);assert.equal(a.store.has(BACKUP),false);
- assert.equal(s.schemaVersion,1);assert.equal(new Set(s.roster.map(c=>c.id)).size,3);
+ assert.equal(s.schemaVersion,2);assert.equal(new Set(s.roster.map(c=>c.id)).size,3);
  assert.deepEqual(s.roster.map(c=>c.name),old.roster);assert.deepEqual(s.present,[s.roster[0].id,s.roster[2].id]);assert.deepEqual(s.history,s.present);assert.equal(s.extraSetting,'kept');
  a.run('save()');assert.equal(a.store.get(BACKUP),raw);
  const b=create(null,{store:a.store});assert.deepEqual(b.state(),a.state());b.run('save()');assert.equal(a.store.get(BACKUP),raw);
@@ -54,13 +55,13 @@ test('add, rename, reorder and removal preserve unaffected stable children and u
  edit(a,'QA Alpha Renamed',alpha.id);assert.deepEqual(a.state().history,[alpha.id,gamma.id]);
  a.run(`moveFriend(${JSON.stringify(gamma.id)},-1)`);assert.deepEqual(a.state().history,[alpha.id,gamma.id]);
  a.run(`removeFriend(${JSON.stringify(beta.id)})`);assert.deepEqual(namesHere(a),['QA Alpha Renamed','QA Gamma']);
- const b=create(null,{store:a.store});b.node('#undoBtn').click();assert.deepEqual(namesHere(b),['QA Alpha Renamed']);
+ const b=create(null,{store:a.store});b.node('#undoBtn').click();assert.ok(b.state().roster.some(c=>c.id===beta.id));assert.deepEqual(namesHere(b),['QA Alpha Renamed','QA Gamma']);b.node('#undoBtn').click();assert.equal(b.state().roster.length,3);b.node('#undoBtn').click();assert.deepEqual(namesHere(b),['QA Alpha Renamed']);
  b.run(`removeFriend(${JSON.stringify(alpha.id)})`);assert.deepEqual(b.state().present,[]);assert.deepEqual(b.state().history,[]);
 });
 test('duplicate names retain separate identities through all roster changes',()=>{
  const a=create(fixture({roster:['QA Same','QA Same'],present:[1],history:[1]})),[first,second]=a.state().roster;
  a.run(`moveFriend(${JSON.stringify(second.id)},-1)`);edit(a,'QA Renamed',first.id);assert.deepEqual(a.state().present,[second.id]);
- a.run(`removeFriend(${JSON.stringify(first.id)})`);assert.deepEqual(a.state().present,[second.id]);a.node('#undoBtn').click();assert.deepEqual(a.state().present,[]);
+ a.run(`removeFriend(${JSON.stringify(first.id)})`);assert.deepEqual(a.state().present,[second.id]);a.node('#undoBtn').click();assert.ok(a.state().roster.some(c=>c.id===first.id));assert.deepEqual(a.state().present,[second.id]);a.node('#undoBtn').click();assert.deepEqual(a.state().present,[]);
 });
 test('add cancellation, repeated submits, stale edits, blank names and class limit are safe',()=>{
  const a=create();a.node('#addFriendBtn').click();a.node('#friendName').value='QA Cancel';a.node('#cancelFriend').click();assert.equal(a.run('saveFriendFromDialog()'),false);assert.equal(a.state().roster.length,3);
@@ -153,7 +154,7 @@ test('bulk append preserves all existing IDs, attendance, undo, extras and migra
  assert.deepEqual(after.roster.slice(3).map(c=>c.name),['QA Renée','QA O’Neil','QA Anne-Marie']);
  assert.equal(new Set(after.roster.map(c=>c.id)).size,6);assert.deepEqual(after.present,before.present);assert.deepEqual(after.history,before.history);assert.equal(after.extra,'kept');
  assert.equal(a.store.get(BACKUP),raw);submitPaste(a);assert.deepEqual(a.state(),after);
- const b=create(null,{store:a.store});assert.deepEqual(b.state(),after);b.node('#undoBtn').click();assert.deepEqual(namesHere(b),['QA Alpha']);
+ const b=create(null,{store:a.store});assert.deepEqual(b.state(),after);b.node('#undoBtn').click();assert.deepEqual(b.state().roster,before.roster);b.node('#undoBtn').click();assert.deepEqual(namesHere(b),['QA Alpha']);
 });
 test('bulk duplicates require explicit review, retain separate identities and reset review after edits',()=>{
  const a=create();paste(a,'QA Alpha\nQA Same\nQA Same\nqa alpha');

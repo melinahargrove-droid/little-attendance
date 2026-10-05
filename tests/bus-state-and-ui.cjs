@@ -15,6 +15,7 @@ function create(saved=fixture(),options={}){
  w.fetch=async()=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(root,'themes/apple-orchard/theme-config.json')))});
  const run=source=>vm.runInContext(source,dom.getInternalVMContext());
  for(const file of ['app.js','apple-adapter.js','bus-adapter.js'])run(fs.readFileSync(path.join(root,file),'utf8'));
+ run("acknowledgedAttendanceDay=localAttendanceDate()");
  return{w,d,run,store,node:s=>d.querySelector(s),state:()=>JSON.parse(run('JSON.stringify(data)'))};
 }
 const visible=(a,zone)=>[...a.d.querySelectorAll('#'+zone+' button:not(.is-placeholder)')];
