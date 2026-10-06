@@ -43,6 +43,15 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          name: theme-preview-${{ matrix.browser }}-${{ github.sha }}
+          path: |
+            test-results/theme-preview-*.png
+            test-results/theme-preview-geometry.json
+            test-results/browser-results.json
+            test-results/live-byte-proof.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
           name: attendance-${{ matrix.browser }}-${{ github.sha }}
           path: |
             test-results/**
