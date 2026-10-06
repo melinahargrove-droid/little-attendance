@@ -237,3 +237,5 @@ Computer/classroom-display support remains the target. Browser tests use only
 fictional rosters. Overlapping Here piles preserve keyboard access to all pieces.
 
 Source reconciliation: Pumpkin uses the original clean 1731 × 909 background from the bundled HANDOFF/source (0.16.39 onward). The top-level v6.0 asset accidentally retains the retired wagon and would draw a second crate. All locked foreground/slot geometry and source PNG bytes remain intact.
+
+Waiting Pumpkin pieces retain their locked positions, but are not cropped by the historical field mask or hidden beneath the crate front. That visibility-only correction keeps the rightmost waiting nameplates readable; Here pumpkins remain behind the original front layer.

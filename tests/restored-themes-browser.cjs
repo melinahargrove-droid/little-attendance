@@ -15,6 +15,10 @@ module.exports=async function({scenario,seed,state,out}){
     await page.setViewportSize(viewport);
     for(const n of [10,15,20,25,30]){
      await seed(page,fixture(theme,n));await page.locator('#takeHotspot').click();await page.locator('#'+screen+'.active').waitFor();await art(page,theme);
+     if(theme==='pumpkin-patch'){
+      const layers=await page.locator('#pumpkinBoard').evaluate(board=>({waiting:getComputedStyle(board.querySelector('.pumpkin-patch-zone')).zIndex,mask:getComputedStyle(board.querySelector('.pumpkin-patch-zone')).clipPath,front:getComputedStyle(board.querySelector('.pumpkin-crate-front')).zIndex,here:getComputedStyle(board.querySelector('.pumpkin-crate-drop-zone')).zIndex}));
+      assert.equal(layers.mask,'none','Waiting nameplates are not clipped by the old field mask');assert.ok(Number(layers.waiting)>Number(layers.front),'Waiting nameplates stay above the decorative front');assert.ok(Number(layers.here)<Number(layers.front),'Here pumpkins retain crate-front occlusion');
+     }
      if(theme==='halloween'){
       const geometry=await page.locator('#halloweenBoard').evaluate(board=>{const r=board.getBoundingClientRect(),mask=board.querySelector('.halloween-bucket-front-mask').getBoundingClientRect(),close=board.querySelector('#halloweenClose'),c=close.getBoundingClientRect();return{ratio:r.width/r.height,background:getComputedStyle(board).backgroundSize,mask:{x:mask.x-r.x,y:mask.y-r.y,w:mask.width-r.width,h:mask.height-r.height},close:{opacity:getComputedStyle(close).opacity,color:getComputedStyle(close).color,x:c.x,y:c.y,right:c.right,bottom:c.bottom}};});
       assert.ok(Math.abs(geometry.ratio-1672/941)<.001,'Halloween uses original aspect ratio');assert.equal(geometry.background,'100% 100%');for(const v of Object.values(geometry.mask))assert.ok(Math.abs(v)<1,'Bucket mask shares the art bounds');assert.equal(geometry.close.opacity,'1');assert.ok(geometry.close.x>=0&&geometry.close.y>=0&&geometry.close.right<=viewport.width&&geometry.close.bottom<=viewport.height,'Visible Close remains onscreen');

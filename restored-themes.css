@@ -335,3 +335,8 @@
 
 /* Leave every waiting ghost label uncovered by the shared controls. */
 #halloweenAttendance .restored-tools{left:auto;right:12px}
+/* Waiting nameplates must remain readable at every locked slot. The historic
+   field mask trimmed the rightmost pieces and the crate front covered them.
+   This changes only waiting visibility, never slot geometry or Here occlusion. */
+.pumpkin-patch-zone{clip-path:none;z-index:1250;pointer-events:none}
+.pumpkin-patch-manual-layout .pumpkin-la-child{pointer-events:auto}
