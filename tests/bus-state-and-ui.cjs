@@ -28,6 +28,7 @@ const click=(a,zone,id)=>a.d.querySelector('#'+zone+' [data-child-id="'+id+'"]')
 test('bus original artwork, locked geometry, and retained legacy home asset are byte-preserved',()=>{
  const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex');
  assert.equal(hash('themes/school-bus/background.png'),'c0701618a36c4982d0a6ca74fbc94a276e160012574537e3d4ec52f6349918ce');
+ assert.equal(hash('themes/school-bus/thumbnail.png'),'dfaaee5e250b72944bf5c47f851ddcf88570269f242506e0af0cb0b7bf634d94');
  assert.equal(hash('themes/school-bus/bus-approved-layout.json'),'32a476e0b9dbae93b979c29d1dd35f5303aa160240168f8d3f2e2e9e607c3e07');
  assert.equal(hash('assets/home-approved.png'),'74656937c2a43727219a3c9ddaa51738e57ed6871a65db774d3e102b0208c7e2');
  const css=fs.readFileSync(path.join(root,'bus-adapter.css'),'utf8');
@@ -39,7 +40,7 @@ test('bus router uses neutral local art and keeps stable slots through every den
  for(const n of [2,6,7,10,12,13,15,16,17,20,21,24,25,27,28,30]){
   const a=create(fixture(n));a.run('openAttendance()');assert.ok(a.node('#busAttendance.active'));
   assert.equal(a.node('.bus-la-bg').getAttribute('src'),'themes/school-bus/background.png');
-  assert.equal(a.run('themeCatalog.find(t=>t.id==="school-bus").thumb'),'themes/school-bus/background.png');
+  assert.equal(a.run('themeCatalog.find(t=>t.id==="school-bus").thumb'),'themes/school-bus/thumbnail.png');
   const original=[...a.node('#busWaitingLayer').children],riders=[...a.node('#busHereLayer').children],classes=a.node('.bus-la-stage').className;
   for(let i=n-1;i>=0;i--){click(a,'busWaitingLayer','qa-'+i);assert.equal(a.state().present.length,n-i);assert.equal(a.node('.bus-la-stage').className,classes);}
   assert.equal(visible(a,'busHereLayer').length,n);assert.equal(visible(a,'busWaitingLayer').length,0);

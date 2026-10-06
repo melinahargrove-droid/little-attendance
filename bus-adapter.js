@@ -148,7 +148,6 @@ window.addEventListener('resize',()=>{
   if(!busActive())return;
   fitWaiting();
 });
-// The School Bus catalog preview must use the neutral standalone artwork too.
-const theme=themeCatalog.find(theme=>theme.id==='school-bus');if(theme)theme.thumb=BASE+'background.png';
+// Theme previews use the catalog's illustration; the board keeps its own art.
 ensureScreen();renderThemeGrid();renderCurrentTheme();
 })();
