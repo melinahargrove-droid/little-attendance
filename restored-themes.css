@@ -332,3 +332,6 @@
 
 /* Fit Halloween art and all overlays to the same uncropped source coordinate space. */
 .halloween-la-close{opacity:1;width:auto;height:auto;min-width:60px;padding:8px 12px;border:1px solid #bccbd4;border-radius:12px;color:#123858;background:#fffdf8;font-size:14px;font-weight:700}
+
+/* Leave every waiting ghost label uncovered by the shared controls. */
+#halloweenAttendance .restored-tools{left:auto;right:12px}

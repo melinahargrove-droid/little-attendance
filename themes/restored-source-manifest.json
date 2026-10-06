@@ -9,8 +9,9 @@
     },
     {
       "path": "themes/pumpkin-patch/background.png",
-      "source": "assets/themes/pumpkin-patch/background.png",
-      "sha256": "0aea7df4dedbab42b3158dba05d737625b3a1e7e10b6a5edbae0ad6d42a1f367"
+      "source": "source-of-truth/pumpkin-patch/source/src/ui/attendance-pumpkin-patch-clean.png",
+      "sha256": "5fbd4f582156e2db3cd9450aa4e8284ce46405d33b717f6644acfe24d5b37bfc",
+      "note": "Authoritative HANDOFF/source CSS switched to the clean backdrop at0.16.39; the top-level v6.0 copy retains a retired wagon."
     },
     {
       "path": "themes/pumpkin-patch/harvest-crate-front.png",
