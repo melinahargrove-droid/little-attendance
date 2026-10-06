@@ -558,6 +558,7 @@ function renderCurrentTheme(){
   $("#currentThemeName").textContent=t.name;
   $("#currentThemeTag").textContent=t.tag;
   const art=$("#currentThemeArt");
+  art.dataset.theme=t.id;
   art.innerHTML=t.thumb?`<img src="${t.thumb}" alt="">`:`<span>${t.emoji||"♡"}</span>`;
 }
 function friendInitials(name){

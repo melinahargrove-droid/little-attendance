@@ -37,6 +37,7 @@ const server=http.createServer((req,res)=>{
  const namesHere=async page=>{const s=await state(page);return s.roster.filter(c=>s.present.includes(c.id)).map(c=>c.name).sort();};
  try{
  await require('./home-browser.cjs')({scenario,seed,state,out});
+ await require('./theme-preview-browser.cjs')({scenario,seed,state,out});
  await require('./visual-controls-browser.cjs')({scenario,seed,state,out});
  await require('./fall-source-browser.cjs')({scenario,seed,state,out});
  await require('./fall-fullscreen-browser.cjs')({scenario,seed,state,out});
