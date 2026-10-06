@@ -15,8 +15,10 @@ The recovered v4 originally embedded large artwork directly in one HTML file. Th
 Requires Node.js 22 or newer. Run `npm ci`, then `npm run check`.
 For browser-engine checks, run `npx playwright install chromium` and
 `npm run test:browser`. Set `BROWSER=webkit` after installing WebKit to test
-that engine. CI runs both engines with fictional QA rosters on localhost;
-it does not access the deployed classroom or deploy the branch.
+that engine. CI runs both engines with fictional QA rosters in isolated browser
+contexts. The visual-art check also opens the published Pages app with its own
+fictional local roster and permits only the three exact public Fall artwork
+URLs. It does not read a teacher's browser data or deploy the branch.
 
 ## Add a class list
 
@@ -46,11 +48,18 @@ and the locked layout JSON are byte-preserved; see `themes/school-bus/README.md`
 This release targets computers and classroom displays. Phone layouts are not
 supported. Portrait captures remain in browser evidence to document that limit.
 
-The former **Teacher Mode** buttons now read **Attendance Controls**. They still
-open Undo, Reset and Full Screen. This is a daily-controls menu, not a protected
-teacher account or security boundary. The home artwork is unchanged; a scoped
-HTML label replaces its old title visually and provides the matching accessible
-name, with visible controls retained if artwork cannot load.
+The homepage has two destinations: **Take Attendance** and **My Classroom**.
+**Attendance Controls** lives inside My Classroom and remains available directly
+on each attendance board, including Fall Leaves. It opens Undo, Reset, Full Screen
+and dated-attendance options. It is not a protected teacher account or security
+boundary. The approved two-card update uses `assets/home-two-actions.png` in the
+same watercolor style. The authentic transparent One Little Teacher logo is a
+separate, unchanged image so there is no rectangular backing. Both home actions
+retain visible labels if the background cannot load. The old three-card source
+remains archived as `assets/home-approved.png`.
+Full Screen closes the controls menu before switching display modes. Unsupported
+or rejected fullscreen requests show an explanatory message without changing
+the classroom or attendance.
 
 ## Saved-classroom upgrade
 
@@ -102,8 +111,8 @@ would need to be reconciled before such a rollback; do not blindly replace data.
 
 ## Repair scope
 
-- Restore the original approved dashboard image without changing its pixels,
-  with named navigation available if the image is delayed or unavailable
+- Simplify the approved dashboard to two destinations, with the original logo
+  and named navigation available if the image is delayed or unavailable
 - Let taps pass through empty Apple Orchard layers to the child buttons
 - Preserve attendance and undo for unaffected children during roster changes
 - Render saved child names as literal text, including markup-like names
@@ -179,5 +188,26 @@ models. Those mocks do not establish browser serialization.
 
 Run both engines before claiming the candidate is browser-verified. OS print
 dialog lifecycle is mocked; Chromium PDF generation and print CSS are separate
-checks. Original Apple assets, Home/School Bus artwork and locked layouts must
-remain unchanged. This branch does not merge or deploy the app.
+checks. Original Apple and School Bus artwork and locked layouts remain unchanged.
+The homepage artwork is the separately approved two-card update. This branch
+does not merge or deploy the app.
+
+## Bounded visual repairs
+
+Apple Orchard keeps its original art, student coordinates and Close hit area.
+A visible **Close** label appears when the viewport crops out the painted X;
+the original X is retained at matching wide proportions. Keyboard focus remains
+visible. Sidebar branding uses intentional **One Little Teacher** text instead
+of an empty image URL.
+
+Fall Leaves uses the exact supplied artwork and approved layout arrays. The
+waiting and Here PNG mappings, canopy/pile coordinate spaces, photo/name
+alignment and live count positions follow the supplied Fall Leaves handoff.
+The original 80px vertical counter offset scales with the viewport height,
+anchored to its 720px layout, to avoid overlapping the painted labels on taller
+screens. This is a correction to the literal fixed-pixel source rule.
+The old tracing masks are omitted because they exclude several approved slots
+and can hide a child completely. No slots, scales or piece sizes are changed.
+All five class-size buckets are checked at 1024×768, 1280×720 and 1671×941,
+including real taps inside photos, arrivals, Undo and roster renaming. The three
+existing external image URLs remain dependencies; they are not an offline cache.

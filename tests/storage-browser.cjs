@@ -8,8 +8,8 @@ module.exports=async({scenario,seed,state,out})=>{
  for(const theme of ['school-bus','apple-orchard','fall-leaves','pumpkin-patch']){
   await scenario(theme+' failed Undo keeps modal feedback and retry usable',async page=>{
    await page.setViewportSize({width:1024,height:768});await seed(page,fixture(theme));await page.locator('#takeHotspot').click();
-   const control=theme==='school-bus'?'#busTeacher':theme==='apple-orchard'?'#appleTeacher':'#teacherBtn';
-   if(theme==='fall-leaves'){await page.locator('#fallLeavesClose').click();await page.locator('#teacherHotspot').click();}else await page.locator(control).click();
+   const control=theme==='school-bus'?'#busTeacher':theme==='apple-orchard'?'#appleTeacher':theme==='fall-leaves'?'#fallLeavesTeacher':'#teacherBtn';
+   await page.locator(control).click();
    const raw=await page.evaluate(key=>localStorage.getItem(key),KEY);
    await page.evaluate(()=>{window.qaOriginalSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(){throw new DOMException('Synthetic full storage','QuotaExceededError');};});
    await page.locator('#undoBtn').click();const notice=page.locator('#teacherDialog .storage-warning-dialog');

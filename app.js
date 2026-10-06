@@ -601,10 +601,6 @@ function renderClassroom(){
   $("#className").value=data.className||"";
   renderCurrentTheme();
   renderFriends();
-  // Mirror the already-embedded real logo from the Themes sidebar.
-  const source=document.querySelector(".themes-sidebar .real-brand img");
-  const target=$("#classroomLogoMirror");
-  if(source&&target&&!target.src)target.src=source.src;
 }
 function openFriendDialog(id=null){
   if($("#friendDialog").open)return;
@@ -740,7 +736,8 @@ function renderFallLeavesAttendance(){
   const total=data.roster.length;
   const bucket=fallLeavesBucket(total);
   const zone=$("#fallLeavesZone");
-  zone.innerHTML="";
+  zone.innerHTML='<div class="fall-la-tree-zone"></div><div class="fall-la-pile-zone"></div>';
+  const treeZone=zone.querySelector(".fall-la-tree-zone"),pileZone=zone.querySelector(".fall-la-pile-zone");
   $("#fallHereCount").textContent=data.present.length;
   $("#fallWaitingCount").textContent=Math.max(0,total-data.present.length);
 
@@ -784,7 +781,7 @@ function renderFallLeavesAttendance(){
       setChildPresent(student.id,!data.present.includes(student.id));
       renderFallLeavesAttendance();
     });
-    zone.appendChild(el);
+    (here?pileZone:treeZone).appendChild(el);
   });
   renderEditingState();
 }
@@ -883,7 +880,6 @@ function renderThemeGrid(){
 
 $("#takeHotspot").onclick=()=>openAttendance();
 $("#classHotspot").onclick=()=>{show("classroom");renderClassroom()};
-$("#teacherHotspot").onclick=()=>$("#teacherDialog").showModal();
 
 $("#themesBack").onclick=()=>show("classroom");
 $("#themeSearch").oninput=renderThemeGrid;
@@ -907,14 +903,28 @@ $("#themeFile").onchange=async e=>{
 };
 
 $("#fallLeavesClose").onclick=()=>show("dashboard");
+$("#fallLeavesTeacher").onclick=()=>$("#teacherDialog").showModal();
 $("#homeBtn").onclick=()=>show("dashboard");
 $("#teacherBtn").onclick=()=>$("#teacherDialog").showModal();
 $("#closeTeacher").onclick=()=>$("#teacherDialog").close();
 $("#undoBtn").onclick=undoAttendance;
 $("#resetBtn").onclick=resetAttendance;
-$("#fullscreenBtn").onclick=()=>{
-  if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
-  else document.exitFullscreen?.();
+$("#fullscreenBtn").onclick=async()=>{
+  const exiting=Boolean(document.fullscreenElement);
+  const target=exiting?document:document.documentElement;
+  const change=exiting?document.exitFullscreen:document.documentElement.requestFullscreen;
+  if(typeof change!=="function" || (!exiting && document.fullscreenEnabled===false)){
+    toast("Full screen isn't available in this browser.");
+    return;
+  }
+  // Close the dialog first: a native fullscreen element can otherwise cover an
+  // already-open modal in WebKit's top layer, leaving its Done button hidden.
+  $("#teacherDialog").close();
+  try{
+    await change.call(target);
+  }catch(error){
+    toast("Full screen couldn't be changed. Try your browser's full-screen control.");
+  }
 };
 
 
@@ -967,11 +977,9 @@ load();
 setupAttendanceDays();
 requestEditingLock();
 renderThemeFilters();
-const _themeLogo=document.querySelector(".themes-sidebar .real-brand img");
-if(_themeLogo && $("#classroomLogoMirror")) $("#classroomLogoMirror").src=_themeLogo.src;
 
 // Keep named navigation available while the approved artwork loads or if it fails.
 const dashboardArt=new Image();
 dashboardArt.onload=()=>document.querySelector(".dashboard-stage").classList.add("art-ready");
 dashboardArt.onerror=()=>document.querySelector(".dashboard-stage").classList.remove("art-ready");
-dashboardArt.src="assets/home-approved.png";
+dashboardArt.src="assets/home-two-actions.png";

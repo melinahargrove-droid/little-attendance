@@ -33,17 +33,57 @@ function create(saved=fixture(),options={}){
  return {w,d,run,store,node:selector=>d.querySelector(selector),state:()=>JSON.parse(run('JSON.stringify(data)')),failWrite:value=>{failWrite=value},failRead:value=>{failRead=value}};
 }
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+test('Fall transfer preserves every approved layout, scale, size and name offset',()=>{
+ const a=create(),approved=JSON.parse(fs.readFileSync(path.join(root,'tests/fixtures/fall-approved-layout.json'),'utf8'));
+ assert.deepEqual(JSON.parse(a.run('JSON.stringify(FALL_LEAVES_CONFIG)')),approved);
+});
+for(const size of [10,15,20,25,30])test('Fall source zones and stable slots survive arrive, Undo and rename at density '+size,()=>{
+ const a=create(fixture({selectedTheme:'fall-leaves',roster:Array.from({length:size},(_,i)=>'QA Leaf '+i),present:[],history:[]}));a.run('openAttendance()');
+ const approved=JSON.parse(a.run('JSON.stringify(FALL_LEAVES_CONFIG)')),initial=a.state(),id=initial.roster[0].id;
+ const slots=()=>[...a.d.querySelectorAll('#fallLeavesZone button')].map(button=>({name:button.querySelector('.fall-la-name').textContent,parent:button.parentElement.className,x:button.style.getPropertyValue('--x'),y:button.style.getPropertyValue('--y'),w:button.style.getPropertyValue('--w'),h:button.style.getPropertyValue('--h'),s:button.style.getPropertyValue('--s')})).sort((a,b)=>a.name.localeCompare(b.name));
+ const original=slots();assert.equal(a.d.querySelectorAll('.fall-la-tree-zone button').length,size);assert.equal(a.d.querySelectorAll('.fall-la-pile-zone button').length,0);
+ for(let i=0;i<size;i++){const b=a.d.querySelectorAll('.fall-la-tree-zone button')[i],p=approved.fallTreeLayouts[size][i];assert.equal(b.style.getPropertyValue('--x'),p.x+'%');assert.equal(b.style.getPropertyValue('--y'),p.y+'%');}
+ a.run('setChildPresent('+JSON.stringify(id)+',true);renderFallLeavesAttendance()');const here=a.node('.fall-la-pile-zone button');assert.equal(here.style.getPropertyValue('--x'),approved.fallPileLayouts[size][0].x+'%');assert.equal(here.style.getPropertyValue('--y'),approved.fallPileLayouts[size][0].y+'%');assert.deepEqual(slots().filter(x=>x.name!=='QA Leaf 0'),original.filter(x=>x.name!=='QA Leaf 0'));
+ a.node('#undoBtn').click();assert.deepEqual(slots(),original);assert.deepEqual(a.state().present,[]);
+ edit(a,'QA Renamed Leaf',id);a.run('renderFallLeavesAttendance()');assert.equal(a.state().roster[0].id,id);assert.equal(a.node('.fall-la-tree-zone button .fall-la-name').textContent,'QA Renamed Leaf');assert.equal(a.node('.fall-la-tree-zone button').style.getPropertyValue('--x'),approved.fallTreeLayouts[size][0].x+'%');
+});
+test('sidebar brand has readable text instead of empty image sources or image mirroring',()=>{
+ const a=create();a.run('renderClassroom()');
+ assert.equal(a.d.querySelectorAll('.real-brand img').length,0);
+ assert.deepEqual([...a.d.querySelectorAll('.mini-brand-name')].map(node=>node.textContent),['One Little Teacher','One Little Teacher']);
+ assert.equal(a.d.querySelector('img[src=""]'),null);
+});
+test('Apple Close has a visible fallback label without changing navigation state',async()=>{
+ const a=create(fixture({selectedTheme:'apple-orchard'}));a.run('openAttendance()');await settle();
+ const before=a.state();assert.equal(a.node('#appleClose').textContent,'Close');assert.equal(a.node('#appleClose').getAttribute('aria-label'),'Close attendance');
+ a.node('#appleClose').click();assert.ok(a.node('#dashboard').classList.contains('active'));assert.deepEqual(a.state(),before);
+});
 function edit(a,name,id=null){a.run(`openFriendDialog(${JSON.stringify(id)})`);a.node('#friendName').value=name;a.node('#friendForm').dispatchEvent(new a.w.Event('submit',{cancelable:true}));}
 function namesHere(a){const s=a.state();return s.roster.filter(child=>s.present.includes(child.id)).map(child=>child.name).sort();}
 
-test('original approved dashboard image and all three usable targets are preserved',()=>{
+test('two-action dashboard uses the approved home art and unchanged transparent logo',()=>{
  const css=fs.readFileSync(path.join(root,'app.css'),'utf8');
- assert.match(css,/background-image:url\("assets\/home-approved.png"\)/);
- const bytes=fs.readFileSync(path.join(root,'assets/home-approved.png'));
- assert.equal(require('crypto').createHash('sha256').update(bytes).digest('hex'),'74656937c2a43727219a3c9ddaa51738e57ed6871a65db774d3e102b0208c7e2');
- const a=create();a.node('#classHotspot').click();assert.ok(a.node('#classroom').classList.contains('active'));
+ assert.match(css,/background-image:url\("assets\/home-two-actions.png"\)/);
+ const hash=bytes=>require('crypto').createHash('sha256').update(bytes).digest('hex');
+ const bytes=fs.readFileSync(path.join(root,'assets/home-two-actions.png'));
+ assert.deepEqual([bytes.readUInt32BE(16),bytes.readUInt32BE(20)],[1672,941]);
+ assert.equal(hash(bytes),'2dc1a50b6c7051b4fc11a875b9c11ade892ac59ad3323084d0e7ab08116d07c5');
+ const logo=fs.readFileSync(path.join(root,'assets/one-little-teacher-logo.png'));
+ assert.deepEqual([logo.readUInt32BE(16),logo.readUInt32BE(20)],[2172,724]);
+ assert.equal(logo[25],6,'The original PNG retains its alpha channel');
+ assert.equal(hash(logo),'88a16fffb50b6f60059aad0829f48f422f50daaf4d77c9dd6e66504dd283d7a3');
+ const a=create();
+ assert.deepEqual([...a.d.querySelectorAll('#dashboard button')].map(b=>[b.id,b.getAttribute('aria-label')]),[['takeHotspot','Take Attendance'],['classHotspot','My Classroom']]);
+ assert.equal(a.node('#teacherHotspot'),null,'No third home or ghost target remains');
+ assert.equal(a.node('.dashboard-brand').getAttribute('src'),'assets/one-little-teacher-logo.png');
+ assert.equal(a.node('.dashboard-brand').getAttribute('alt'),'One Little Teacher');
+ a.node('#classHotspot').click();assert.ok(a.node('#classroom').classList.contains('active'));
+ a.node('#classroomTeacher').click();assert.ok(a.node('#teacherDialog').open);a.node('#closeTeacher').click();
  a.node('#classroomHome').click();a.node('#takeHotspot').click();assert.ok(a.node('#attendance').classList.contains('active'));
- a.node('#homeBtn').click();a.node('#teacherHotspot').click();assert.ok(a.node('#teacherDialog').open);
+ a.node('#homeBtn').click();assert.ok(a.node('#dashboard').classList.contains('active'));
+ a.run('dashboardArt.onload()');assert.ok(a.node('.dashboard-stage').classList.contains('art-ready'));
+ a.run('dashboardArt.onerror()');assert.equal(a.node('.dashboard-stage').classList.contains('art-ready'),false);
+ assert.equal(a.run('dashboardArt.src'),'https://attendance.test/assets/home-two-actions.png');
 });
 test('legacy migration preserves classroom, duplicate names, order, attendance, themes, extras and original bytes',()=>{
  const old=fixture({roster:['QA Same','QA Same','QA Third'],ownedThemes:['school-bus','fall-leaves'],extraSetting:'kept'}),raw=JSON.stringify(old);
@@ -206,10 +246,37 @@ test('bulk revalidates capacity on submit and protects a newer saved tab',()=>{
 
 
 test('Attendance Controls replaces Teacher Mode while keeping the same daily actions',async()=>{
- const a=create();assert.equal(a.node('#teacherHotspot').getAttribute('aria-label'),'Attendance Controls');
- for(const id of ['teacherHotspot','classroomTeacher','themesTeacher','teacherBtn']){
+ const a=create();assert.equal(a.node('#teacherHotspot'),null);
+ for(const id of ['classroomTeacher','themesTeacher','teacherBtn','fallLeavesTeacher']){
   assert.match(a.node('#'+id).textContent,/Attendance\s*Controls/);a.node('#'+id).click();assert.equal(a.node('#teacherDialog').open,true);a.node('#closeTeacher').click();
  }
  assert.doesNotMatch(a.d.body.textContent,/Teacher Mode/);assert.equal(a.node('#undoBtn').textContent,'Undo');assert.equal(a.node('#resetBtn').textContent,'Reset');assert.equal(a.node('#fullscreenBtn').textContent,'Full Screen');
  a.run('data.selectedTheme="apple-orchard";openAttendance()');await settle();assert.equal(a.node('#appleTeacher').textContent,'Attendance Controls');
+});
+
+
+test('fullscreen closes controls before invoking enter and exit APIs without changing classroom data',async()=>{
+ const a=create(),before=a.state(),raw=a.store.get(KEY),calls=[];let fullscreen=null;
+ Object.defineProperty(a.d,'fullscreenEnabled',{value:true});Object.defineProperty(a.d,'fullscreenElement',{get:()=>fullscreen});
+ a.d.documentElement.requestFullscreen=function(){calls.push({action:'enter',open:a.node('#teacherDialog').open,target:this===a.d.documentElement});fullscreen=a.d.documentElement;return Promise.resolve();};
+ a.d.exitFullscreen=function(){calls.push({action:'exit',open:a.node('#teacherDialog').open,target:this===a.d});fullscreen=null;return Promise.resolve();};
+ a.node('#classHotspot').click();
+ for(const action of ['enter','exit']){a.node('#classroomTeacher').click();await a.node('#fullscreenBtn').onclick();assert.equal(a.node('#teacherDialog').open,false);assert.ok(a.node('#classroom.active'));}
+ assert.deepEqual(calls,[{action:'enter',open:false,target:true},{action:'exit',open:false,target:true}]);assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);
+});
+for(const reason of ['missing method','disabled capability'])test('unsupported fullscreen '+reason+' leaves controls open with truthful feedback',async()=>{
+ const a=create(),before=a.state(),raw=a.store.get(KEY);let calls=0;
+ Object.defineProperty(a.d,'fullscreenEnabled',{value:reason!=='disabled capability'});
+ if(reason==='disabled capability')a.d.documentElement.requestFullscreen=()=>{calls++;return Promise.resolve();};
+ a.node('#classHotspot').click();a.node('#classroomTeacher').click();await a.node('#fullscreenBtn').onclick();
+ assert.equal(a.node('#teacherDialog').open,true);assert.equal(calls,0);assert.equal(a.node('#toast').textContent,"Full screen isn't available in this browser.");assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);
+});
+for(const action of ['enter','exit'])test('rejected fullscreen '+action+' closes controls and reports failure without writing classroom data',async()=>{
+ const a=create(),before=a.state(),raw=a.store.get(KEY);let called=0;
+ Object.defineProperty(a.d,'fullscreenEnabled',{value:true});Object.defineProperty(a.d,'fullscreenElement',{value:action==='exit'?a.d.documentElement:null});
+ const target=action==='enter'?a.d.documentElement:a.d,method=action==='enter'?'requestFullscreen':'exitFullscreen';
+ target[method]=function(){called++;assert.equal(this,target);assert.equal(a.node('#teacherDialog').open,false);return Promise.reject(new Error('Synthetic fullscreen rejection'));};
+ a.node('#classHotspot').click();a.node('#classroomTeacher').click();await a.node('#fullscreenBtn').onclick();
+ assert.equal(called,1);assert.equal(a.node('#teacherDialog').open,false);assert.equal(a.node('#toast').textContent,"Full screen couldn't be changed. Try your browser's full-screen control.");assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);
+ a.node('#classroomTeacher').click();assert.equal(a.node('#teacherDialog').open,true);
 });

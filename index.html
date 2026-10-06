@@ -14,9 +14,9 @@
 
 <section id="dashboard" class="screen active">
   <div class="dashboard-stage" aria-label="Little Attendance dashboard">
+    <img class="dashboard-brand" src="assets/one-little-teacher-logo.png" alt="One Little Teacher">
     <button id="takeHotspot" class="hotspot" aria-label="Take Attendance">Take Attendance</button>
     <button id="classHotspot" class="hotspot" aria-label="My Classroom">My Classroom</button>
-    <button id="teacherHotspot" class="hotspot" aria-label="Attendance Controls"><span class="dashboard-control-label"><span>Attendance<br>Controls</span></span></button>
   </div>
 </section>
 
@@ -25,7 +25,7 @@
   <div class="classroom-shell">
     <aside class="classroom-sidebar">
       <div class="mini-brand real-brand classroom-brand">
-        <img id="classroomLogoMirror" alt="One Little Teacher">
+        <div class="mini-brand-name">One Little Teacher</div>
         <div class="mini-brand-tag">Big days start here.</div>
       </div>
 
@@ -159,7 +159,7 @@
   <div class="themes-shell">
     <aside class="themes-sidebar">
       <div class="mini-brand real-brand">
-        <img src="" alt="One Little Teacher">
+        <div class="mini-brand-name">One Little Teacher</div>
         <div class="mini-brand-tag">Big days start here.</div>
       </div>
       <nav class="theme-nav">
@@ -191,9 +191,12 @@
 <section id="fallLeavesAttendance" class="screen">
   <div class="fall-la-viewport">
     <div id="fallLeavesBoard" class="fall-la-board" aria-label="Fall Leaves attendance board">
-      <div class="fall-la-count here" id="fallHereCount">0</div>
-      <div class="fall-la-count waiting" id="fallWaitingCount">0</div>
+      <div class="fall-la-counts">
+        <div class="fall-la-count here" id="fallHereCount">0</div>
+        <div class="fall-la-count waiting" id="fallWaitingCount">0</div>
+      </div>
       <div class="fall-la-zone" id="fallLeavesZone"></div>
+      <button class="fall-la-teacher" id="fallLeavesTeacher">Attendance Controls</button>
       <button class="fall-la-close" id="fallLeavesClose" aria-label="Close attendance">Close</button>
     </div>
   </div>

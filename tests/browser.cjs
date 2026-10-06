@@ -1,3 +1,4 @@
+const {openClassroom,openAttendanceControls}=require('./navigation-helper.cjs');
 // Browser-engine regression suite. Uses only synthetic classroom data on localhost.
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -19,7 +20,7 @@ const server=http.createServer((req,res)=>{
  if(process.env.TARGET_URL){
   assert.equal(url,'https://melinahargrove-droid.github.io/little-attendance/','Only the approved existing app may be live-tested');
   const crypto=require('node:crypto'),proof=[];
-  for(const file of ['index.html','app.js','app.css','apple-adapter.js','apple-adapter.css','bus-adapter.js','bus-adapter.css','themes/school-bus/background.png','themes/school-bus/bus-approved-layout.json','assets/home-approved.png','themes/apple-orchard/background.png','themes/apple-orchard/basket-apple.png','themes/apple-orchard/waiting-apple.png','themes/apple-orchard/thumbnail.png','themes/apple-orchard/theme-config.json']){
+  for(const file of ['index.html','app.js','app.css','apple-adapter.js','apple-adapter.css','bus-adapter.js','bus-adapter.css','themes/school-bus/background.png','themes/school-bus/bus-approved-layout.json','assets/home-two-actions.png','assets/one-little-teacher-logo.png','themes/apple-orchard/background.png','themes/apple-orchard/basket-apple.png','themes/apple-orchard/waiting-apple.png','themes/apple-orchard/thumbnail.png','themes/apple-orchard/theme-config.json']){
    const response=await fetch(url+file);assert.equal(response.status,200,file);
    const live=Buffer.from(await response.arrayBuffer()),expected=fs.readFileSync(path.join(root,file));
    const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
@@ -35,27 +36,15 @@ const server=http.createServer((req,res)=>{
  const state=page=>page.evaluate(()=>JSON.parse(JSON.stringify(data)));
  const namesHere=async page=>{const s=await state(page);return s.roster.filter(c=>s.present.includes(c.id)).map(c=>c.name).sort();};
  try{
+ await require('./home-browser.cjs')({scenario,seed,state,out});
+ await require('./visual-controls-browser.cjs')({scenario,seed,state,out});
+ await require('./fall-source-browser.cjs')({scenario,seed,state,out});
+ await require('./fall-fullscreen-browser.cjs')({scenario,seed,state,out});
  await require('./bus-browser.cjs')({scenario,seed,state,out});
  await require('./bus-label-review.cjs')({scenario,seed,state,out});
  await require('./storage-browser.cjs')({scenario,seed,state,out});
  await require('./attendance-days-browser.cjs')({scenario,seed,state,out});
  await require('./single-writer-browser.cjs')({scenario,seed,state,out});
- await scenario('approved home art, three controls, keyboard, navigation and resize',async(page)=>{
-  await seed(page,fixture());const image=await page.locator('.dashboard-stage').evaluate(async el=>{const css=getComputedStyle(el).backgroundImage;const img=new Image();img.src=css.slice(5,-2);await img.decode();return{width:img.naturalWidth,height:img.naturalHeight};});assert.deepEqual(image,{width:1920,height:1080});
-  assert.equal(await page.locator('#teacherHotspot').getAttribute('aria-label'),'Attendance Controls');assert.notEqual(await page.locator('.dashboard-control-label').evaluate(e=>getComputedStyle(e).color),'rgba(0, 0, 0, 0)');await page.screenshot({path:path.join(out,'home-desktop.png')});
-  await page.getByRole('button',{name:'My Classroom',exact:true}).click();assert.equal(await page.locator('#classroom').evaluate(e=>e.classList.contains('active')),true);
-  await page.locator('#classBack').click();await page.locator('#takeHotspot').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#busAttendance.active').count(),1);
-  await page.locator('#busClose').click();await page.locator('#teacherHotspot').click();assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),true);await page.locator('#closeTeacher').click();
-  for(const viewport of [{width:768,height:1024},{width:390,height:844},{width:320,height:568}]){
-   await page.setViewportSize(viewport);await page.screenshot({path:path.join(out,'home-'+viewport.width+'.png')});
-   const label=await page.locator('.dashboard-control-label').evaluate(e=>({width:e.clientWidth,scroll:e.scrollWidth}));assert.ok(label.scroll<=label.width+1,'Attendance Controls title fits the home artwork');
-   await page.locator('#teacherHotspot').click();assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),true);await page.locator('#closeTeacher').click();
-  }
-  await page.locator('#classHotspot').click();assert.equal(await page.locator('#classroom.active').count(),1);
- });
- await scenario('home remains visibly usable when approved artwork cannot load',async(page,context)=>{
-  await context.route('**/assets/home-approved.png',route=>route.abort());await seed(page,fixture());assert.equal(await page.locator('.dashboard-stage').evaluate(e=>e.classList.contains('art-ready')),false);for(const id of ['takeHotspot','classHotspot','teacherHotspot'])assert.notEqual(await page.locator('#'+id).evaluate(e=>getComputedStyle(e).color),'rgba(0, 0, 0, 0)');await page.screenshot({path:path.join(out,'home-art-fallback.png')});await page.locator('#classHotspot').click();assert.equal(await page.locator('#classroom.active').count(),1);
- });
  await scenario('migration, real roster controls, cancelled dialogs, stable undo and reload',async(page)=>{
   const old=fixture();await seed(page,old);const original=JSON.stringify(old);await page.locator('#classHotspot').click();
   await page.locator('#addFriendBtn').click();await page.locator('#friendName').fill('QA Cancel');await page.locator('#cancelFriend').click();assert.equal((await state(page)).roster.length,3);
@@ -63,8 +52,8 @@ const server=http.createServer((req,res)=>{
   await page.getByRole('button',{name:'Edit QA Alpha',exact:true}).click();await page.locator('#friendName').fill('QA Alpha Renamed');await page.locator('#saveFriend').click();
   await page.getByRole('button',{name:'Move QA Gamma up',exact:true}).click();page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Remove QA Beta',exact:true}).click();assert.deepEqual(await namesHere(page),['QA Alpha Renamed','QA Gamma']);
   assert.equal(await page.evaluate(key=>localStorage.getItem(key),BACKUP),original);
-  await page.reload();await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,4);assert.deepEqual(await namesHere(page),['QA Alpha Renamed','QA Gamma']);await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,3);await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha Renamed']);await page.locator('#closeTeacher').click();
-  await page.locator('#classHotspot').click();await page.locator('#className').fill('QA Immediate Reload');await page.reload();assert.equal((await state(page)).className,'QA Immediate Reload');
+  await page.reload();await openAttendanceControls(page);await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,4);assert.deepEqual(await namesHere(page),['QA Alpha Renamed','QA Gamma']);await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,3);await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha Renamed']);await page.locator('#closeTeacher').click();
+  await openClassroom(page);await page.locator('#className').fill('QA Immediate Reload');await page.reload();assert.equal((await state(page)).className,'QA Immediate Reload');
  });
  await scenario('paste list preview, cancel, Escape, append, duplicates, reload and undo',async(page)=>{
   const old=fixture();await seed(page,old);const raw=JSON.stringify(old),before=await state(page);await page.locator('#classHotspot').click();
@@ -76,7 +65,7 @@ const server=http.createServer((req,res)=>{
   const added=await state(page);assert.deepEqual(added.roster.slice(0,3),before.roster);assert.deepEqual(added.present,before.present);assert.deepEqual(added.history,before.history);assert.equal(added.roster.length,6);assert.equal(new Set(added.roster.map(c=>c.id)).size,6);assert.equal(await page.evaluate(key=>localStorage.getItem(key),BACKUP),raw);
   await page.locator('#pasteListBtn').click();await page.locator('#pastedNames').fill('QA Alpha\nQA Same\nQA Same');assert.equal(await page.locator('#savePasteList').isDisabled(),true);assert.equal(await page.locator('#pasteListPreview small').count(),3);
   await page.screenshot({path:path.join(out,'paste-duplicate-review.png')});await page.locator('#confirmDuplicateNames').check();await page.locator('#savePasteList').click();assert.equal((await state(page)).roster.length,9);assert.equal(new Set((await state(page)).roster.map(c=>c.id)).size,9);
-  await page.reload();assert.equal((await state(page)).roster.length,9);await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,6);await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,3);await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha']);
+  await page.reload();assert.equal((await state(page)).roster.length,9);await openAttendanceControls(page);await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,6);await page.locator('#undoBtn').click();assert.equal((await state(page)).roster.length,3);await page.locator('#undoBtn').click();assert.deepEqual(await namesHere(page),['QA Alpha']);
  });
  await scenario('paste list responsive preview, long names, limits and literal text',async(page)=>{
   for(const viewport of [{width:1280,height:720},{width:1024,height:768},{width:768,height:1024},{width:390,height:844},{width:320,height:568}]){
@@ -134,6 +123,6 @@ const server=http.createServer((req,res)=>{
   await context.unroute('**/theme-config.json');await context.route('**/theme-config.json',route=>route.abort());await page.reload();await page.evaluate(()=>{acknowledgedAttendanceDay=localAttendanceDate();});await page.locator('#takeHotspot').click();await page.locator('#attendance.active').waitFor();assert.equal(await page.locator('#studentGrid button').count(),3);await page.locator('#teacherBtn').click();await page.locator('#undoBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'1');page.once('dialog',d=>d.accept());await page.locator('#resetBtn').click();assert.equal(await page.locator('#hereCount').textContent(),'0');
  });
  }finally{
-  fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify({engine:process.env.BROWSER||'chromium',scope:process.env.TARGET_URL?'Published Pages app in fresh isolated browser contexts; fictional QA rosters only':'Isolated localhost; fictional QA rosters only',results},null,2));await browser.close();server.close();
+  fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify({engine:process.env.BROWSER||'chromium',scope:process.env.TARGET_URL?'Published Pages app in fresh isolated browser contexts; fictional QA rosters only':'Isolated localhost plus published Fall artwork check; fictional QA rosters only',results},null,2));await browser.close();server.close();
  }
 })().catch(error=>{console.error(error);server.close();process.exitCode=1;});

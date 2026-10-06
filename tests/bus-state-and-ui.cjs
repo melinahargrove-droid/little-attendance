@@ -25,7 +25,7 @@ function create(saved=fixture(),options={}){
 const visible=(a,zone)=>[...a.d.querySelectorAll('#'+zone+' button:not(.is-placeholder)')];
 const click=(a,zone,id)=>a.d.querySelector('#'+zone+' [data-child-id="'+id+'"]').click();
 
-test('bus original artwork, locked geometry, and approved home pixels are byte-preserved',()=>{
+test('bus original artwork, locked geometry, and retained legacy home asset are byte-preserved',()=>{
  const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex');
  assert.equal(hash('themes/school-bus/background.png'),'c0701618a36c4982d0a6ca74fbc94a276e160012574537e3d4ec52f6349918ce');
  assert.equal(hash('themes/school-bus/bus-approved-layout.json'),'32a476e0b9dbae93b979c29d1dd35f5303aa160240168f8d3f2e2e9e607c3e07');
