@@ -225,13 +225,18 @@ Attendance Controls, Undo, Reset, dated history and the editing lock are the
 current application's shared controls. Animations cannot queue delayed state
 writes after navigation or reset. Missing artwork falls back to the usable list.
 
-This restoration does not import the historical build's ownership migration or
-change the current default selection. Historically Our Friends was included
-free and selected by default, while that build also auto-unlocked the other
-finished themes. That commercial behavior is not assumed here. Newly cataloged
-entries use the existing ownership mechanism, so absent entitlements appear
-locked. This is a review candidate: settle intended Our Friends availability
-before publication. No prices, purchases or entitlements are created by this PR.
+Our Friends is included free and is the default for new classrooms. Existing
+classrooms keep every valid selected theme and all existing owned themes,
+including the previous School Bus and Apple inclusions. Missing or invalid saved
+selections fall back to Our Friends. Loading adds the free inclusion only to the
+in-memory state: it does not write browser storage or show an unsaved-change
+warning. It is persisted with the next authorized, successful ordinary save.
+Repeated loads do not duplicate it. Selecting the free theme still obeys the
+editing lock and normal save-failure/retry safeguards.
+
+The historical build's blanket auto-unlock of other finished themes is not
+imported. No other entitlement is removed, and no pricing, purchase or live
+publication is introduced by this draft.
 
 Computer/classroom-display support remains the target. Browser tests use only
 fictional rosters. Overlapping Here piles preserve keyboard access to all pieces.

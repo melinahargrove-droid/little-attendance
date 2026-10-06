@@ -1,5 +1,7 @@
 
 const STORAGE_KEY="littleAttendanceCleanV4";
+// Existing valid saved selections are preserved; fresh/invalid state uses this.
+const DEFAULT_THEME_ID="our-friends";
 const $=s=>document.querySelector(s);
 let data={
   schemaVersion:2,
@@ -12,13 +14,13 @@ let data={
   roster:[],
   present:[],
   history:[],
-  selectedTheme:"school-bus",
-  ownedThemes:["school-bus"]
+  selectedTheme:DEFAULT_THEME_ID,
+  ownedThemes:["school-bus","our-friends"]
 };
 
 const themeCatalog=[
 {id:"school-bus",name:"School Bus",category:"Everyday",tag:"Good friends. Brighter days.",emoji:"🚌",thumb:"themes/school-bus/thumbnail.png"},
-{id:"our-friends",name:"Our Friends",category:"Everyday",tag:"Same friends. Brighter days.",emoji:"♡"},
+{id:"our-friends",name:"Our Friends",category:"Everyday",tag:"Included free with Little Attendance.",emoji:"♡"},
 {id:"halloween",name:"Halloween",category:"Holidays",tag:"A sweet little spooky hello.",emoji:"👻"},
 {id:"apple-orchard",name:"Apple Orchard",category:"Fall",tag:"A sweet start to the day.",emoji:"🍎",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/shared/attendance-themes/apple-orchard/thumbnail.png"},
 {id:"pumpkin-patch",name:"Pumpkin Patch",category:"Fall",tag:"Fall friends. Bright beginnings.",emoji:"🎃",thumb:"themes/pumpkin-patch/thumbnail.png"},
@@ -180,8 +182,10 @@ function migrateState(saved){
   const history=[...new Set(toIds(saved.history).filter(id=>present.includes(id)).reverse())].reverse();
   const dayState=migrateAttendanceDays(saved,history);
   return {...data,...saved,...dayState,schemaVersion:2,roster,present,history,
-    selectedTheme:themeCatalog.some(t=>t.id===saved.selectedTheme)?saved.selectedTheme:data.selectedTheme,
-    ownedThemes:[...new Set(["school-bus",...(saved.ownedThemes||[]).filter(id=>typeof id==="string")])]};
+    selectedTheme:themeCatalog.some(t=>t.id===saved.selectedTheme)?saved.selectedTheme:DEFAULT_THEME_ID,
+    // Add the approved free theme without removing any prior entitlement.
+    // load() snapshots this normalization; it never writes on startup.
+    ownedThemes:[...new Set(["school-bus","our-friends",...(saved.ownedThemes||[]).filter(id=>typeof id==="string")])]};
 }
 function warnUnsavedChanges(event){
   if(!unsavedChanges)return;
@@ -553,7 +557,7 @@ function autosaveClassroom(){
   save();
 }
 function getThemeById(id){
-  return themeCatalog.find(t=>t.id===id)||themeCatalog[0];
+  return themeCatalog.find(t=>t.id===id)||themeCatalog.find(t=>t.id===DEFAULT_THEME_ID);
 }
 function renderCurrentTheme(){
   const t=getThemeById(data.selectedTheme);

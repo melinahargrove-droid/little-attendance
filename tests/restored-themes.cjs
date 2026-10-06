@@ -8,11 +8,11 @@ const configs=[['pumpkin-patch','pumpkinPatchAttendance','pumpkinWaitingZone','p
 function create(theme='pumpkin-patch',n=30,extra={},options={}){
  const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'https://attendance.test/',runScripts:'outside-only'}),w=dom.window;windows.push(w);
  const saved={schemaVersion:1,roster:Array.from({length:n},(_,i)=>({id:'qa-'+i,name:'QA Friend '+i})),present:[],history:[],selectedTheme:theme,ownedThemes:['school-bus','apple-orchard',...configs.map(c=>c[0])],...extra};
- const store=new Map([[KEY,JSON.stringify(saved)]]);Object.defineProperty(w,'localStorage',{value:{getItem:key=>store.get(key)??null,setItem:(key,val)=>{if(options.failWrite)throw Error('full');store.set(key,val);}}});
- require('./lock-helper.cjs').installSingleDocumentLocks(w);w.confirm=()=>true;w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+ const writes=[],store=options.store||new Map(options.fresh?[]:[[KEY,JSON.stringify(saved)]]);Object.defineProperty(w,'localStorage',{value:{getItem:key=>store.get(key)??null,setItem:(key,val)=>{writes.push([key,val]);if(options.failWrite)throw Error('full');store.set(key,val);}}});
+ require('./lock-helper.cjs').installSingleDocumentLocks(w,options.locks);w.confirm=()=>true;w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
  w.fetch=async()=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(root,'themes/apple-orchard/theme-config.json')))});
  const run=source=>vm.runInContext(source,dom.getInternalVMContext());for(const file of ['app.js','apple-adapter.js','bus-adapter.js','restored-theme-layouts.js','restored-themes.js'])run(fs.readFileSync(path.join(root,file),'utf8'));
- run('acknowledgedAttendanceDay=localAttendanceDate()');return {w,run,store,node:s=>w.document.querySelector(s),nodes:s=>[...w.document.querySelectorAll(s)],state:()=>JSON.parse(run('JSON.stringify(data)'))};
+ run('acknowledgedAttendanceDay=localAttendanceDate()');return {w,run,store,writes,failWrite:value=>{options.failWrite=value;},node:s=>w.document.querySelector(s),nodes:s=>[...w.document.querySelectorAll(s)],state:()=>JSON.parse(run('JSON.stringify(data)'))};
 }
 function click(a,zone,id){a.node('#'+zone+' [data-child-id="'+id+'"]').click();}
 
@@ -43,7 +43,25 @@ for(const [theme,screen,waiting,here,close] of configs){
   const a=create(theme,3);a.run('openAttendance()');click(a,waiting,'qa-1');a.node('#'+close).click();const state=a.state();await new Promise(r=>setTimeout(r,700));assert.deepEqual(a.state(),state);assert.ok(a.node('#dashboard.active'));assert.equal(a.nodes('.restored-flight').length,0);
  });
 }
-test('restoration does not migrate defaults, ownership, current theme or saved bytes on load',()=>{
- const a=create('school-bus',3,{ownedThemes:['school-bus','apple-orchard']});const raw=a.store.get(KEY);assert.equal(a.run('themeCatalog[0].id'),'school-bus');assert.deepEqual(a.state().ownedThemes,['school-bus','apple-orchard']);assert.equal(a.state().selectedTheme,'school-bus');assert.equal(a.store.get(KEY),raw);assert.equal(a.run('themeCatalog.length'),21);
- a.run('renderThemeGrid()');for(const name of ['Our Friends','Halloween','Pumpkin Patch']){const card=a.nodes('.theme-card').find(el=>el.querySelector('h3').textContent===name);assert.match(card.textContent,/Locked/);card.click();assert.equal(a.state().selectedTheme,'school-bus');}
+test('Our Friends is included free without changing existing selections, other ownership or saved bytes on load',()=>{
+ const a=create('halloween',3,{ownedThemes:['school-bus','apple-orchard','halloween','future-owned-theme']});const raw=a.store.get(KEY);assert.equal(a.run('getThemeById("missing").id'),'our-friends');assert.deepEqual(a.state().ownedThemes,['school-bus','our-friends','apple-orchard','halloween','future-owned-theme']);assert.equal(a.state().selectedTheme,'halloween');assert.equal(a.store.get(KEY),raw);assert.equal(a.run('themeCatalog.length'),21);assert.equal(a.writes.length,0);assert.equal(a.run('unsavedChanges'),false);
+ a.run('renderThemeGrid()');const ours=a.nodes('.theme-card').find(el=>el.querySelector('h3').textContent==='Our Friends');assert.match(ours.textContent,/Included free/);assert.match(ours.textContent,/Owned/);
+ const pumpkin=a.nodes('.theme-card').find(el=>el.querySelector('h3').textContent==='Pumpkin Patch');assert.match(pumpkin.textContent,/Locked/);pumpkin.click();assert.equal(a.state().selectedTheme,'halloween');assert.equal(a.store.get(KEY),raw);
+});
+test('fresh classrooms default to free Our Friends without startup writes or removing School Bus and Apple',()=>{
+ const a=create('school-bus',0,{}, {fresh:true});assert.equal(a.state().selectedTheme,'our-friends');assert.deepEqual(a.state().ownedThemes,['school-bus','our-friends','apple-orchard']);assert.equal(a.node('#currentThemeName').textContent,'Our Friends');assert.equal(a.node('#currentThemeTag').textContent,'Included free with Little Attendance.');assert.equal(a.store.size,0);assert.equal(a.writes.length,0);assert.equal(a.run('unsavedChanges'),false);
+ for(const selectedTheme of [undefined,'unavailable-theme']){const b=create('school-bus',3,{selectedTheme,ownedThemes:['school-bus']});assert.equal(b.state().selectedTheme,'our-friends');assert.equal(b.writes.length,0);}
+ for(const selectedTheme of ['school-bus','apple-orchard','pumpkin-patch','halloween','our-friends']){const b=create(selectedTheme,3);assert.equal(b.state().selectedTheme,selectedTheme);assert.equal(b.writes.length,0);}
+});
+test('free inclusion is idempotent across migrations, repeated loads and a successful save/reload',()=>{
+ const a=create('school-bus',3,{ownedThemes:['school-bus','apple-orchard','our-friends','our-friends','halloween']});const raw=a.store.get(KEY);a.run('load();load()');assert.equal(a.state().ownedThemes.filter(id=>id==='our-friends').length,1);assert.equal(a.writes.length,0);assert.equal(a.store.get(KEY),raw);assert.equal(a.state().selectedTheme,'school-bus');
+ a.run('renderThemeGrid()');a.nodes('.theme-card').find(el=>el.querySelector('h3').textContent==='Our Friends').click();assert.equal(a.state().selectedTheme,'our-friends');const saved=a.store.get(KEY),b=create('school-bus',3,{}, {store:a.store});assert.equal(b.state().selectedTheme,'our-friends');assert.equal(b.state().ownedThemes.filter(id=>id==='our-friends').length,1);assert.ok(b.state().ownedThemes.includes('halloween'));assert.equal(b.store.get(KEY),saved);assert.equal(b.writes.length,0);assert.equal(b.run('unsavedChanges'),false);
+});
+test('pending/read-only editing locks cannot select or persist the free theme',()=>{
+ const locks=require('./lock-helper.cjs').createLockManager({deferred:true}),a=create('school-bus',3,{ownedThemes:['school-bus','apple-orchard']},{locks});const raw=a.store.get(KEY);a.run('renderThemeGrid()');const card=()=>a.nodes('.theme-card').find(el=>el.querySelector('h3').textContent==='Our Friends');assert.equal(card().getAttribute('aria-disabled'),'true');card().click();assert.equal(a.state().selectedTheme,'school-bus');assert.equal(a.store.get(KEY),raw);assert.equal(a.writes.length,0);assert.ok(a.state().ownedThemes.includes('our-friends'));assert.equal(a.run('unsavedChanges'),false);
+ locks.flush();assert.equal(a.run('editingLockHeld'),true);assert.equal(a.writes.length,0);a.run('releaseEditingSession()');card().click();assert.equal(a.state().selectedTheme,'school-bus');assert.equal(a.store.get(KEY),raw);
+});
+test('failed selection keeps exact stored bytes and retry saves free inclusion once without changing other entitlements',()=>{
+ const a=create('halloween',3,{ownedThemes:['school-bus','apple-orchard','halloween','penguin-pals']},{failWrite:true});const raw=a.store.get(KEY),roster=a.state().roster;a.run('renderThemeGrid()');a.nodes('.theme-card').find(el=>el.querySelector('h3').textContent==='Our Friends').click();assert.equal(a.state().selectedTheme,'our-friends');assert.equal(a.store.get(KEY),raw);assert.equal(a.run('unsavedChanges'),true);assert.equal(a.node('#autosaveText').textContent,'Not saved');
+ a.failWrite(false);a.node('#retrySave').click();const b=create('school-bus',3,{}, {store:a.store});assert.equal(b.state().selectedTheme,'our-friends');assert.deepEqual(b.state().roster,roster);for(const id of ['school-bus','apple-orchard','halloween','penguin-pals','our-friends'])assert.ok(b.state().ownedThemes.includes(id));assert.equal(b.state().ownedThemes.filter(id=>id==='our-friends').length,1);assert.equal(b.run('unsavedChanges'),false);assert.equal(b.writes.length,0);
 });
