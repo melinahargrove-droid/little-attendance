@@ -253,3 +253,30 @@ test('Attendance Controls replaces Teacher Mode while keeping the same daily act
  assert.doesNotMatch(a.d.body.textContent,/Teacher Mode/);assert.equal(a.node('#undoBtn').textContent,'Undo');assert.equal(a.node('#resetBtn').textContent,'Reset');assert.equal(a.node('#fullscreenBtn').textContent,'Full Screen');
  a.run('data.selectedTheme="apple-orchard";openAttendance()');await settle();assert.equal(a.node('#appleTeacher').textContent,'Attendance Controls');
 });
+
+
+test('fullscreen closes controls before invoking enter and exit APIs without changing classroom data',async()=>{
+ const a=create(),before=a.state(),raw=a.store.get(KEY),calls=[];let fullscreen=null;
+ Object.defineProperty(a.d,'fullscreenEnabled',{value:true});Object.defineProperty(a.d,'fullscreenElement',{get:()=>fullscreen});
+ a.d.documentElement.requestFullscreen=function(){calls.push({action:'enter',open:a.node('#teacherDialog').open,target:this===a.d.documentElement});fullscreen=a.d.documentElement;return Promise.resolve();};
+ a.d.exitFullscreen=function(){calls.push({action:'exit',open:a.node('#teacherDialog').open,target:this===a.d});fullscreen=null;return Promise.resolve();};
+ a.node('#classHotspot').click();
+ for(const action of ['enter','exit']){a.node('#classroomTeacher').click();await a.node('#fullscreenBtn').onclick();assert.equal(a.node('#teacherDialog').open,false);assert.ok(a.node('#classroom.active'));}
+ assert.deepEqual(calls,[{action:'enter',open:false,target:true},{action:'exit',open:false,target:true}]);assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);
+});
+for(const reason of ['missing method','disabled capability'])test('unsupported fullscreen '+reason+' leaves controls open with truthful feedback',async()=>{
+ const a=create(),before=a.state(),raw=a.store.get(KEY);let calls=0;
+ Object.defineProperty(a.d,'fullscreenEnabled',{value:reason!=='disabled capability'});
+ if(reason==='disabled capability')a.d.documentElement.requestFullscreen=()=>{calls++;return Promise.resolve();};
+ a.node('#classHotspot').click();a.node('#classroomTeacher').click();await a.node('#fullscreenBtn').onclick();
+ assert.equal(a.node('#teacherDialog').open,true);assert.equal(calls,0);assert.equal(a.node('#toast').textContent,"Full screen isn't available in this browser.");assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);
+});
+for(const action of ['enter','exit'])test('rejected fullscreen '+action+' closes controls and reports failure without writing classroom data',async()=>{
+ const a=create(),before=a.state(),raw=a.store.get(KEY);let called=0;
+ Object.defineProperty(a.d,'fullscreenEnabled',{value:true});Object.defineProperty(a.d,'fullscreenElement',{value:action==='exit'?a.d.documentElement:null});
+ const target=action==='enter'?a.d.documentElement:a.d,method=action==='enter'?'requestFullscreen':'exitFullscreen';
+ target[method]=function(){called++;assert.equal(this,target);assert.equal(a.node('#teacherDialog').open,false);return Promise.reject(new Error('Synthetic fullscreen rejection'));};
+ a.node('#classHotspot').click();a.node('#classroomTeacher').click();await a.node('#fullscreenBtn').onclick();
+ assert.equal(called,1);assert.equal(a.node('#teacherDialog').open,false);assert.equal(a.node('#toast').textContent,"Full screen couldn't be changed. Try your browser's full-screen control.");assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);
+ a.node('#classroomTeacher').click();assert.equal(a.node('#teacherDialog').open,true);
+});

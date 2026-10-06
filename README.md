@@ -57,6 +57,9 @@ same watercolor style. The authentic transparent One Little Teacher logo is a
 separate, unchanged image so there is no rectangular backing. Both home actions
 retain visible labels if the background cannot load. The old three-card source
 remains archived as `assets/home-approved.png`.
+Full Screen closes the controls menu before switching display modes. Unsupported
+or rejected fullscreen requests show an explanatory message without changing
+the classroom or attendance.
 
 ## Saved-classroom upgrade
 

@@ -909,9 +909,22 @@ $("#teacherBtn").onclick=()=>$("#teacherDialog").showModal();
 $("#closeTeacher").onclick=()=>$("#teacherDialog").close();
 $("#undoBtn").onclick=undoAttendance;
 $("#resetBtn").onclick=resetAttendance;
-$("#fullscreenBtn").onclick=()=>{
-  if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
-  else document.exitFullscreen?.();
+$("#fullscreenBtn").onclick=async()=>{
+  const exiting=Boolean(document.fullscreenElement);
+  const target=exiting?document:document.documentElement;
+  const change=exiting?document.exitFullscreen:document.documentElement.requestFullscreen;
+  if(typeof change!=="function" || (!exiting && document.fullscreenEnabled===false)){
+    toast("Full screen isn't available in this browser.");
+    return;
+  }
+  // Close the dialog first: a native fullscreen element can otherwise cover an
+  // already-open modal in WebKit's top layer, leaving its Done button hidden.
+  $("#teacherDialog").close();
+  try{
+    await change.call(target);
+  }catch(error){
+    toast("Full screen couldn't be changed. Try your browser's full-screen control.");
+  }
 };
 
 

@@ -44,7 +44,32 @@ module.exports=async({scenario,seed,state,out})=>{
  await scenario('two-action homepage and controls remain reachable through fullscreen when supported',async page=>{
   await seed(page,fixture());const before=await state(page);const supported=await page.evaluate(()=>document.fullscreenEnabled&&typeof document.documentElement.requestFullscreen==='function');
   if(!supported){console.log('INFO native fullscreen unavailable in this browser; desktop-size coverage still applies');return;}
-  await openAttendanceControls(page);await page.locator('#fullscreenBtn').click();await page.waitForFunction(()=>!!document.fullscreenElement);await page.locator('#closeTeacher').click();await page.locator('#classroomHome').click();await assertHomeTargets(page);await page.screenshot({path:path.join(out,'home-fullscreen.png')});
-  await openAttendanceControls(page);await page.locator('#fullscreenBtn').click();await page.waitForFunction(()=>!document.fullscreenElement);await page.locator('#closeTeacher').click();await page.locator('#classroomHome').click();await assertHomeTargets(page);assert.deepEqual(await state(page),before);
+  await openAttendanceControls(page);await page.locator('#fullscreenBtn').click();await page.waitForFunction(()=>!!document.fullscreenElement);assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),false,'Controls close before entering native fullscreen');await page.locator('#classroomHome').click();await assertHomeTargets(page);await page.screenshot({path:path.join(out,'home-fullscreen.png')});
+  await openAttendanceControls(page);await page.locator('#fullscreenBtn').click();await page.waitForFunction(()=>!document.fullscreenElement);assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),false,'Controls close before exiting native fullscreen');await page.locator('#classroomHome').click();await assertHomeTargets(page);assert.deepEqual(await state(page),before);
  });
+ for(const reason of ['missing method','disabled capability'])await scenario('simulated unsupported fullscreen '+reason+' preserves the open controls and classroom',async page=>{
+  await seed(page,fixture());const before=await state(page);await openAttendanceControls(page);
+  await page.evaluate(reason=>{
+   window.qaFullscreenCalls=0;
+   Object.defineProperty(document,'fullscreenEnabled',{configurable:true,value:reason!=='disabled capability'});
+   Object.defineProperty(document.documentElement,'requestFullscreen',{configurable:true,value:reason==='missing method'?undefined:function(){window.qaFullscreenCalls++;return Promise.reject(new Error('The disabled fullscreen method must not run'));}});
+  },reason);
+  await page.locator('#fullscreenBtn').click();
+  await page.waitForFunction(()=>document.querySelector('#toast.show')?.textContent==="Full screen isn't available in this browser.");
+  assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),true);assert.equal(await page.evaluate(()=>window.qaFullscreenCalls),0);assert.equal(await page.evaluate(()=>Boolean(document.fullscreenElement)),false);assert.deepEqual(await state(page),before);
+  await page.locator('#closeTeacher').click();await page.locator('#classroomHome').click();await assertHomeTargets(page);
+ });
+ await scenario('simulated rejected fullscreen closes controls before the call and leaves navigation usable',async page=>{
+  await seed(page,fixture());const before=await state(page);await openAttendanceControls(page);
+  await page.evaluate(()=>{
+   window.qaFullscreenCalls=[];
+   Object.defineProperty(document,'fullscreenEnabled',{configurable:true,value:true});
+   Object.defineProperty(document.documentElement,'requestFullscreen',{configurable:true,value:function(){window.qaFullscreenCalls.push({dialogOpen:document.querySelector('#teacherDialog').open,correctTarget:this===document.documentElement});return Promise.reject(new DOMException('Synthetic fullscreen rejection','NotAllowedError'));}});
+  });
+  await page.locator('#fullscreenBtn').click();
+  await page.waitForFunction(()=>document.querySelector('#toast.show')?.textContent==="Full screen couldn't be changed. Try your browser's full-screen control.");
+  assert.deepEqual(await page.evaluate(()=>window.qaFullscreenCalls),[{dialogOpen:false,correctTarget:true}]);assert.equal(await page.locator('#teacherDialog').evaluate(e=>e.open),false);assert.equal(await page.evaluate(()=>Boolean(document.fullscreenElement)),false);assert.deepEqual(await state(page),before);
+  await page.locator('#classroomHome').click();await assertHomeTargets(page);await openAttendanceControls(page);assert.equal(await page.locator('#teacherDialog').isVisible(),true);await page.locator('#closeTeacher').click();assert.deepEqual(await state(page),before);
+ });
+
 };
