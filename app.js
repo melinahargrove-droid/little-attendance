@@ -880,7 +880,6 @@ function renderThemeGrid(){
 
 $("#takeHotspot").onclick=()=>openAttendance();
 $("#classHotspot").onclick=()=>{show("classroom");renderClassroom()};
-$("#teacherHotspot").onclick=()=>$("#teacherDialog").showModal();
 
 $("#themesBack").onclick=()=>show("classroom");
 $("#themeSearch").oninput=renderThemeGrid;
@@ -904,6 +903,7 @@ $("#themeFile").onchange=async e=>{
 };
 
 $("#fallLeavesClose").onclick=()=>show("dashboard");
+$("#fallLeavesTeacher").onclick=()=>$("#teacherDialog").showModal();
 $("#homeBtn").onclick=()=>show("dashboard");
 $("#teacherBtn").onclick=()=>$("#teacherDialog").showModal();
 $("#closeTeacher").onclick=()=>$("#teacherDialog").close();
@@ -969,4 +969,4 @@ renderThemeFilters();
 const dashboardArt=new Image();
 dashboardArt.onload=()=>document.querySelector(".dashboard-stage").classList.add("art-ready");
 dashboardArt.onerror=()=>document.querySelector(".dashboard-stage").classList.remove("art-ready");
-dashboardArt.src="assets/home-approved.png";
+dashboardArt.src="assets/home-two-actions.png";

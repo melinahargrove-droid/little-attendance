@@ -20,7 +20,7 @@ module.exports=async({scenario,seed,state,out})=>{
    for(let i=0;i<size;i++){const name='QA Leaf '+String(i+1).padStart(2,'0'),button=page.getByRole('button',{name:(here?'Return ':'Mark here ')+name,exact:true}),point=await hitPoint(button);const entry={viewport,size,here,name,point};coverage.push(entry);if(!point)missing.push(entry);}
    fs.writeFileSync(path.join(out,'fall-source-hit-coverage.json'),JSON.stringify({coverage,missing},null,2));
    const counts=await page.locator('.fall-la-count').evaluateAll(elements=>elements.map(el=>{const b=el.getBoundingClientRect();return{x:b.x,y:b.y,w:b.width,h:b.height};}));
-   for(const count of counts){assert.ok(count.y>=viewport.height*.23&&count.y+count.h<=viewport.height*.38,'Counter stays in its painted box');}
+   for(const count of counts){assert.ok(count.y>=viewport.height*.285&&count.y+count.h<=viewport.height*.38,'Counter stays below its painted label and inside the box');}
   }
   fs.writeFileSync(path.join(out,'fall-source-hit-coverage.json'),JSON.stringify({coverage,missing},null,2));assert.deepEqual(missing,[],'Every approved tree and pile slot must have a real visible photo hit target');
  });
@@ -32,7 +32,7 @@ module.exports=async({scenario,seed,state,out})=>{
     const name='QA Leaf '+String(i+1).padStart(2,'0'),before=await snapshot(page),button=page.getByRole('button',{name:'Mark here '+name,exact:true}),point=await hitPoint(button);assert.ok(point,name+' has a real tap target');await page.mouse.click(point.x,point.y);assert.equal((await state(page)).present.length,i+1);const after=await snapshot(page);for(const other of Object.keys(before))if(other!==name)assert.deepEqual(after[other],before[other],'Only the tapped child moves');
    }
    assert.equal(await page.locator('#fallHereCount').textContent(),String(size));assert.equal(await page.locator('#fallWaitingCount').textContent(),'0');
-   await page.locator('#fallLeavesClose').click();await page.locator('#teacherHotspot').click();await page.locator('#undoBtn').click();await page.locator('#closeTeacher').click();await page.locator('#takeHotspot').click();assert.equal((await state(page)).present.length,size-1);assert.equal(await page.locator('.fall-la-tree-zone button').count(),1);
+   await page.locator('#fallLeavesTeacher').click();assert.equal(await page.locator('#teacherDialog').isVisible(),true);await page.locator('#undoBtn').click();await page.locator('#closeTeacher').click();assert.equal(await page.locator('#fallLeavesAttendance.active').count(),1);assert.equal((await state(page)).present.length,size-1);assert.equal(await page.locator('.fall-la-tree-zone button').count(),1);
    const before=await snapshot(page),beforeState=await state(page);await page.locator('#fallLeavesClose').click();await page.locator('#classHotspot').click();await page.getByRole('button',{name:'Edit QA Leaf 01',exact:true}).click();await page.locator('#friendName').fill('QA Renamed Leaf');await page.locator('#saveFriend').click();await page.locator('#classroomAttendance').click();await loaded(page);
    const after=await snapshot(page);assert.deepEqual(after['QA Renamed Leaf'],before['QA Leaf 01']);for(const name of Object.keys(before))if(name!=='QA Leaf 01')assert.deepEqual(after[name],before[name]);assert.deepEqual((await state(page)).present,beforeState.present);assert.equal((await state(page)).roster[0].id,beforeState.roster[0].id);
    await page.screenshot({path:path.join(out,'fall-source-'+viewport.width+'-'+size+'-after-undo-rename.png')});
@@ -41,6 +41,10 @@ module.exports=async({scenario,seed,state,out})=>{
  });
  await scenario('Fall actual art keeps readonly Close physically reachable',async(page,context)=>{
   await allowArt(context);await seed(page,fixture(30));const reader=await context.newPage();await reader.goto(page.url());await reader.waitForFunction(()=>editingLockState==='blocked');await reader.evaluate(()=>{acknowledgedAttendanceDay=localAttendanceDate();});const before=await state(reader);
-  for(const viewport of viewports){await reader.setViewportSize(viewport);await reader.locator('#takeHotspot').click();await loaded(reader);await reader.screenshot({path:path.join(out,'fall-source-readonly-'+viewport.width+'.png')});await reader.locator('#fallLeavesClose').click();assert.equal(await reader.locator('#dashboard.active').count(),1);assert.deepEqual(await state(reader),before);}
+  for(const viewport of viewports){await reader.setViewportSize(viewport);await reader.locator('#takeHotspot').click();await loaded(reader);await reader.screenshot({path:path.join(out,'fall-source-readonly-'+viewport.width+'.png')});
+   await reader.locator('#fallLeavesTeacher').click();assert.equal(await reader.locator('#teacherDialog').isVisible(),true);
+   for(const id of ['undoBtn','resetBtn','startTodayBtn','saveAttendanceHistory'])assert.equal(await reader.locator('#'+id).getAttribute('aria-disabled'),'true','Readonly Fall controls cannot edit attendance');
+   assert.deepEqual(await state(reader),before);await reader.locator('#closeTeacher').click();assert.equal(await reader.locator('#fallLeavesAttendance.active').count(),1);
+   await reader.locator('#fallLeavesClose').click();assert.equal(await reader.locator('#dashboard.active').count(),1);assert.deepEqual(await state(reader),before);}
  });
 };
