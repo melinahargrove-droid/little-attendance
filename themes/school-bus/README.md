@@ -1,5 +1,20 @@
 # Restored standalone School Bus
 
+## Theme icon
+
+`thumbnail.png` is the original 4:3 watercolor School Bus illustration used by
+the attendance theme catalog. My Classroom and the theme chooser use this same
+icon. It is separate from the attendance-board background described below.
+
+- Source: `melinahargrove-droid/early-eagle-classroom`,
+  `v6-test/assets/assets/attendance-themes/school-bus.png`
+- Source Git blob: `07a3afad9fd3dd38244a393d23b2ce6fc0f7b7f7`
+- Dimensions: 1448 × 1086
+- SHA-256: `dfaaee5e250b72944bf5c47f851ddcf88570269f242506e0af0cb0b7bf634d94`
+- Original bytes retained, with no regeneration or image editing
+
+## Attendance board
+
 The neutral watercolor artwork is copied without pixel changes from the finished
 Little Classroom 0.16.82 School Bus handoff for standalone Little Attendance.
 It contains no Early Eagle branding. Do not replace it with the earlier
