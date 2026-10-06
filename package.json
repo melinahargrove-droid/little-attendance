@@ -3,9 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "node --test --test-concurrency=1 tests/state-and-ui.cjs tests/bus-state-and-ui.cjs tests/storage-safety.cjs tests/attendance-days.cjs tests/single-writer.cjs",
+    "test": "node --test --test-concurrency=1 tests/state-and-ui.cjs tests/bus-state-and-ui.cjs tests/storage-safety.cjs tests/attendance-days.cjs tests/single-writer.cjs tests/restored-themes.cjs",
     "test:browser": "node tests/browser.cjs",
-    "check": "node --check app.js && node --check apple-adapter.js && node --check bus-adapter.js && npm test"
+    "check": "node --check app.js && node --check apple-adapter.js && node --check bus-adapter.js && node --check restored-theme-layouts.js && node --check restored-themes.js && npm test"
   },
   "devDependencies": {
     "jsdom": "26.1.0",

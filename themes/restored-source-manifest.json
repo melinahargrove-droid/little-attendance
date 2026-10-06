@@ -1,0 +1,72 @@
+{
+  "archive": "Little_Attendance_v6_0_Our_Friends_Free_Theme.zip",
+  "archiveSha256": "68e4cc0782a16a19db61e98f92a298190616fb302d5a046777f208003de546ab",
+  "assets": [
+    {
+      "path": "themes/pumpkin-patch/harvest-crate.png",
+      "source": "assets/themes/pumpkin-patch/harvest-crate.png",
+      "sha256": "b73bf7d0bdd4b2e735547bb25d2f06cbb6ee80250d60663f9716d0180ee4498c"
+    },
+    {
+      "path": "themes/pumpkin-patch/background.png",
+      "source": "source-of-truth/pumpkin-patch/source/src/ui/attendance-pumpkin-patch-clean.png",
+      "sha256": "5fbd4f582156e2db3cd9450aa4e8284ce46405d33b717f6644acfe24d5b37bfc",
+      "note": "Authoritative HANDOFF/source CSS switched to the clean backdrop at0.16.39; the top-level v6.0 copy retains a retired wagon."
+    },
+    {
+      "path": "themes/pumpkin-patch/harvest-crate-front.png",
+      "source": "assets/themes/pumpkin-patch/harvest-crate-front.png",
+      "sha256": "8c8a04d7bfc47078d32cf2ef7f67116bdf76d39a711a4921fe44637f1eae95e4"
+    },
+    {
+      "path": "themes/pumpkin-patch/here-pumpkin.png",
+      "source": "assets/themes/pumpkin-patch/here-pumpkin.png",
+      "sha256": "28345448dc8ee2a4096f4d74824624e707c1ba6e1cee7d00240d9f2d6a1cdccc"
+    },
+    {
+      "path": "themes/pumpkin-patch/waiting-pumpkin.png",
+      "source": "assets/themes/pumpkin-patch/waiting-pumpkin.png",
+      "sha256": "951419cf456a83dcbbcd900aa03c32986fa35068f00a261a2f443840bc0bbd8a"
+    },
+    {
+      "path": "themes/halloween/bucket-front-mask.png",
+      "source": "assets/themes/halloween/bucket-front-mask.png",
+      "sha256": "6aad48ab19397eb1cf96121e46a1bfc9af92bd7ebe2f56a132369213a9a2380a"
+    },
+    {
+      "path": "themes/halloween/candy-here.png",
+      "source": "assets/themes/halloween/candy-here.png",
+      "sha256": "e52d5e5f6912ffbf050c27afee08a6adbd7dbc9e537fe5381997886ff92e3661"
+    },
+    {
+      "path": "themes/halloween/background.png",
+      "source": "assets/themes/halloween/background.png",
+      "sha256": "c55323172663fcdecdbca8a7341bd6ce7347ffcd43f0b7724187dcd8f0519be4"
+    },
+    {
+      "path": "themes/halloween/ghost-waiting.png",
+      "source": "assets/themes/halloween/ghost-waiting.png",
+      "sha256": "fda7ee964cdf9b8b6e8f37055eba73b2c5897fa17238a7da57dbf8cea42b7174"
+    },
+    {
+      "path": "themes/our-friends/here-box-front-occlusion.png",
+      "source": "assets/themes/our-friends/here-box-front-occlusion.png",
+      "sha256": "d25c00d19fd206da26a6886bca130fff6055cb694761e83961be98fbf76b3747"
+    },
+    {
+      "path": "themes/our-friends/background.png",
+      "source": "assets/themes/our-friends/background.png",
+      "sha256": "b0c798ffd9e9d22393a73a6828289430dceb4c6bbddce3a8ea16c8e2d0d96c36"
+    },
+    {
+      "path": "themes/our-friends/polaroid.png",
+      "source": "assets/themes/our-friends/polaroid.png",
+      "sha256": "bae293e9ca14a257c8c761d13edd9c313a38fe55f810855f41671a142aeedba4"
+    },
+    {
+      "path": "themes/pumpkin-patch/thumbnail.png",
+      "source": "assets/thumbnails/pumpkin-patch.png",
+      "sha256": "b521284ca1e54a235802a72381830fa8237f5cf0cf2ae6d9ebdaca7e70ef2def"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 
 const STORAGE_KEY="littleAttendanceCleanV4";
+// Existing valid saved selections are preserved; fresh/invalid state uses this.
+const DEFAULT_THEME_ID="our-friends";
 const $=s=>document.querySelector(s);
 let data={
   schemaVersion:2,
@@ -12,14 +14,16 @@ let data={
   roster:[],
   present:[],
   history:[],
-  selectedTheme:"school-bus",
-  ownedThemes:["school-bus"]
+  selectedTheme:DEFAULT_THEME_ID,
+  ownedThemes:["school-bus","our-friends"]
 };
 
 const themeCatalog=[
 {id:"school-bus",name:"School Bus",category:"Everyday",tag:"Good friends. Brighter days.",emoji:"🚌",thumb:"themes/school-bus/thumbnail.png"},
+{id:"our-friends",name:"Our Friends",category:"Everyday",tag:"Included free with Little Attendance.",emoji:"♡"},
+{id:"halloween",name:"Halloween",category:"Holidays",tag:"A sweet little spooky hello.",emoji:"👻"},
 {id:"apple-orchard",name:"Apple Orchard",category:"Fall",tag:"A sweet start to the day.",emoji:"🍎",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/shared/attendance-themes/apple-orchard/thumbnail.png"},
-{id:"pumpkin-patch",name:"Pumpkin Patch",category:"Fall",tag:"Fall friends. Bright beginnings.",emoji:"🎃",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/pumpkin-patch.png"},
+{id:"pumpkin-patch",name:"Pumpkin Patch",category:"Fall",tag:"Fall friends. Bright beginnings.",emoji:"🎃",thumb:"themes/pumpkin-patch/thumbnail.png"},
 {id:"fall-leaves",name:"Fall Leaves",category:"Fall",tag:"Watch our friendship pile grow!",emoji:"🍂",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-leaves.png"},
 {id:"turkey-friends",name:"Turkey Friends",category:"Fall",tag:"Every friend adds something special.",emoji:"🦃",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/turkey-friends.png"},
 {id:"penguin-pals",name:"Penguin Pals",category:"Winter",tag:"Cool friends. Warm welcomes.",emoji:"🐧",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/penguin-pals.png"},
@@ -74,7 +78,7 @@ function renderEditingState(){
   retry.textContent=editingLockHeld?"Try saving again":"Try editing";
   // ARIA-disabled keeps the artwork/layout unchanged. Mutation gates below are
   // the enforcement boundary, including direct calls and asynchronous handlers.
-  document.querySelectorAll("#className,#saveFriend,#savePasteList,#saveAttendanceHistory,#startTodayBtn,#startNewDay,#undoBtn,#resetBtn,#addPurchasedTheme,.friend-action.move-up,.friend-action.move-down,.friend-action.delete,.theme-card,#studentGrid button,#fallLeavesZone button,#appleWaitLayer button,#appleHereLayer button,#busWaitingLayer button,#busHereLayer button").forEach(control=>control.setAttribute("aria-disabled",String(!editingLockHeld)));
+  document.querySelectorAll("#className,#saveFriend,#savePasteList,#saveAttendanceHistory,#startTodayBtn,#startNewDay,#undoBtn,#resetBtn,#addPurchasedTheme,.friend-action.move-up,.friend-action.move-down,.friend-action.delete,.theme-card,#studentGrid button,#fallLeavesZone button,#appleWaitLayer button,#appleHereLayer button,#busWaitingLayer button,#busHereLayer button,.restored-child").forEach(control=>control.setAttribute("aria-disabled",String(!editingLockHeld)));
   $("#className").readOnly=!editingLockHeld;
   renderDialogStorageWarnings();
   setAutosaveState(false);
@@ -178,8 +182,10 @@ function migrateState(saved){
   const history=[...new Set(toIds(saved.history).filter(id=>present.includes(id)).reverse())].reverse();
   const dayState=migrateAttendanceDays(saved,history);
   return {...data,...saved,...dayState,schemaVersion:2,roster,present,history,
-    selectedTheme:themeCatalog.some(t=>t.id===saved.selectedTheme)?saved.selectedTheme:data.selectedTheme,
-    ownedThemes:[...new Set(["school-bus",...(saved.ownedThemes||[]).filter(id=>typeof id==="string")])]};
+    selectedTheme:themeCatalog.some(t=>t.id===saved.selectedTheme)?saved.selectedTheme:DEFAULT_THEME_ID,
+    // Add the approved free theme without removing any prior entitlement.
+    // load() snapshots this normalization; it never writes on startup.
+    ownedThemes:[...new Set(["school-bus","our-friends",...(saved.ownedThemes||[]).filter(id=>typeof id==="string")])]};
 }
 function warnUnsavedChanges(event){
   if(!unsavedChanges)return;
@@ -551,7 +557,7 @@ function autosaveClassroom(){
   save();
 }
 function getThemeById(id){
-  return themeCatalog.find(t=>t.id===id)||themeCatalog[0];
+  return themeCatalog.find(t=>t.id===id)||themeCatalog.find(t=>t.id===DEFAULT_THEME_ID);
 }
 function renderCurrentTheme(){
   const t=getThemeById(data.selectedTheme);

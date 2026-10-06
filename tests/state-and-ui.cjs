@@ -157,7 +157,7 @@ test('late Apple configuration cannot navigate after close, and failed loading h
  const b=create(fixture({selectedTheme:'apple-orchard'}),{fetch:async()=>{throw Error('offline')}});b.run('openAttendance()');await settle();assert.ok(b.node('#attendance').classList.contains('active'));assert.equal(b.node('#studentGrid').children.length,3);assert.deepEqual(namesHere(b),['QA Alpha','QA Gamma']);
 });
 test('all 19 original themes remain available and attendance identity survives theme changes',async()=>{
- const a=create();assert.equal(a.run('themeCatalog.length'),19);const ids=a.run('themeCatalog.map(t=>t.id)');
+ const a=create();assert.equal(a.run('themeCatalog.length'),21);const ids=a.run('themeCatalog.map(t=>t.id)');
  for(const id of ids){a.run(`data.selectedTheme=${JSON.stringify(id)};openAttendance()`);await settle();assert.deepEqual(namesHere(a),['QA Alpha','QA Gamma']);}
 });
 

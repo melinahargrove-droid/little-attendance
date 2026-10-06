@@ -211,3 +211,36 @@ and can hide a child completely. No slots, scales or piece sizes are changed.
 All five class-size buckets are checked at 1024×768, 1280×720 and 1671×941,
 including real taps inside photos, arrivals, Undo and roster renaming. The three
 existing external image URLs remain dependencies; they are not an offline cache.
+
+## Recovered theme renderers (review candidate)
+
+Pumpkin Patch, Halloween and Our Friends retain the recovered v6.0 art and fixed
+roster-slot geometry. The thirteen image files have SHA-256 provenance in
+`themes/restored-source-manifest.json`; original source is
+`Little_Attendance_v6_0_Our_Friends_Free_Theme.zip`.
+The Pumpkin crate front, Halloween bucket mask, and Our Friends box front remain
+above the Here pieces. Only the tapped child's composite moves; other slots do
+not compact. Names use literal text and photos accept only embedded raster data.
+Attendance Controls, Undo, Reset, dated history and the editing lock are the
+current application's shared controls. Animations cannot queue delayed state
+writes after navigation or reset. Missing artwork falls back to the usable list.
+
+Our Friends is included free and is the default for new classrooms. Existing
+classrooms keep every valid selected theme and all existing owned themes,
+including the previous School Bus and Apple inclusions. Missing or invalid saved
+selections fall back to Our Friends. Loading adds the free inclusion only to the
+in-memory state: it does not write browser storage or show an unsaved-change
+warning. It is persisted with the next authorized, successful ordinary save.
+Repeated loads do not duplicate it. Selecting the free theme still obeys the
+editing lock and normal save-failure/retry safeguards.
+
+The historical build's blanket auto-unlock of other finished themes is not
+imported. No other entitlement is removed, and no pricing, purchase or live
+publication is introduced by this draft.
+
+Computer/classroom-display support remains the target. Browser tests use only
+fictional rosters. Overlapping Here piles preserve keyboard access to all pieces.
+
+Source reconciliation: Pumpkin uses the original clean 1731 × 909 background from the bundled HANDOFF/source (0.16.39 onward). The top-level v6.0 asset accidentally retains the retired wagon and would draw a second crate. All locked foreground/slot geometry and source PNG bytes remain intact.
+
+Waiting Pumpkin pieces retain their locked positions, but are not cropped by the historical field mask or hidden beneath the crate front. That visibility-only correction keeps the rightmost waiting nameplates readable; Here pumpkins remain behind the original front layer.

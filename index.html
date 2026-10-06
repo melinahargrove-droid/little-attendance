@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="apple-adapter.css">
 <link rel="stylesheet" href="bus-adapter.css">
+<link rel="stylesheet" href="restored-themes.css">
 </head>
 <body>
 <div class="app">
@@ -66,8 +67,8 @@
           <div class="current-theme-art" id="currentThemeArt"></div>
           <div class="current-theme-copy">
             <div class="mini-label">Current theme</div>
-            <h2 id="currentThemeName">School Bus</h2>
-            <p id="currentThemeTag">Good friends. Brighter days.</p>
+            <h2 id="currentThemeName">Our Friends</h2>
+            <p id="currentThemeTag">Included free with Little Attendance.</p>
             <button class="secondary compact" id="browseThemes">Change Theme</button>
           </div>
         </div>
@@ -202,6 +203,51 @@
   </div>
 </section>
 
+<section id="pumpkinPatchAttendance" class="screen">
+  <div class="pumpkin-la-viewport">
+    <div id="pumpkinBoard" class="pumpkin-la-board attendance-pumpkin-theme" aria-label="Pumpkin Patch attendance board">
+      <div class="pumpkin-la-counts">
+        <span><strong id="pumpkinHereCount">0</strong></span>
+        <span><strong id="pumpkinWaitingCount">0</strong></span>
+      </div>
+
+      <div class="pumpkin-patch-zone">
+        <div class="pumpkin-patch-manual-layout" id="pumpkinWaitingZone"></div>
+      </div>
+
+      <div class="pumpkin-crate-asset" aria-hidden="true"></div>
+
+      <div class="pumpkin-crate-drop-zone">
+        <div class="pumpkin-crate-manual-layout" id="pumpkinHereZone"></div>
+      </div>
+
+      <div class="pumpkin-crate-front" aria-hidden="true"></div>
+      <button class="pumpkin-la-close" id="pumpkinClose" aria-label="Close attendance">Close</button>
+    </div>
+  </div>
+</section>
+<section id="halloweenAttendance" class="screen">
+  <div class="halloween-la-viewport">
+    <div id="halloweenBoard" class="halloween-la-board" aria-label="Halloween attendance board">
+      <div id="halloweenWaiting"></div>
+      <div id="halloweenHere"></div>
+      <img class="halloween-bucket-front-mask" src="themes/halloween/bucket-front-mask.png" alt="">
+      <div class="halloween-count" id="halloweenHereCount">0</div>
+      <div class="halloween-count" id="halloweenWaitingCount">0</div>
+      <button class="halloween-la-close" id="halloweenClose" aria-label="Close attendance">Close</button>
+    </div>
+  </div>
+</section>
+<section id="ourFriendsAttendance" class="screen">
+  <div class="friends-la-viewport">
+    <div id="ourFriendsBoard" class="friends-la-board" aria-label="Our Friends attendance board">
+      <div id="ourFriendsWaiting" class="friends-la-waiting"></div>
+      <div id="ourFriendsHere" class="friends-la-here"></div>
+      <div class="friends-la-front-mask" aria-hidden="true"></div>
+      <button class="friends-la-close" id="ourFriendsClose" aria-label="Close attendance">Close</button>
+    </div>
+  </div>
+</section>
 <section id="attendance" class="screen">
   <div class="att-wrap">
     <div class="topbar">
@@ -278,5 +324,7 @@
 <script src="app.js"></script>
 <script src="apple-adapter.js"></script>
 <script src="bus-adapter.js"></script>
+<script src="restored-theme-layouts.js"></script>
+<script src="restored-themes.js"></script>
 </body>
 </html>

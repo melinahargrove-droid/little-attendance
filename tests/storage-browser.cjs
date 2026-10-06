@@ -5,10 +5,10 @@ const path=require('node:path');
 module.exports=async({scenario,seed,state,out})=>{
  const KEY='littleAttendanceCleanV4';
  const fixture=theme=>({schemaVersion:1,className:'QA Storage Safety',roster:[{id:'qa-a',name:'QA Alpha'},{id:'qa-b',name:'QA Beta'}],present:['qa-a'],history:['qa-a'],selectedTheme:theme,ownedThemes:['school-bus','apple-orchard','fall-leaves']});
- for(const theme of ['school-bus','apple-orchard','fall-leaves','pumpkin-patch']){
+ for(const theme of ['school-bus','apple-orchard','fall-leaves','pumpkin-patch','halloween','our-friends']){
   await scenario(theme+' failed Undo keeps modal feedback and retry usable',async page=>{
    await page.setViewportSize({width:1024,height:768});await seed(page,fixture(theme));await page.locator('#takeHotspot').click();
-   const control=theme==='school-bus'?'#busTeacher':theme==='apple-orchard'?'#appleTeacher':theme==='fall-leaves'?'#fallLeavesTeacher':'#teacherBtn';
+   const control=theme==='school-bus'?'#busTeacher':theme==='apple-orchard'?'#appleTeacher':theme==='fall-leaves'?'#fallLeavesTeacher':theme==='pumpkin-patch'?'#pumpkinTeacher':theme==='halloween'?'#halloweenTeacher':'#ourFriendsTeacher';
    await page.locator(control).click();
    const raw=await page.evaluate(key=>localStorage.getItem(key),KEY);
    await page.evaluate(()=>{window.qaOriginalSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(){throw new DOMException('Synthetic full storage','QuotaExceededError');};});
