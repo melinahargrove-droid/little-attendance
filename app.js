@@ -18,8 +18,10 @@ let data={
 
 const themeCatalog=[
 {id:"school-bus",name:"School Bus",category:"Everyday",tag:"Good friends. Brighter days.",emoji:"🚌",thumb:"themes/school-bus/thumbnail.png"},
+{id:"our-friends",name:"Our Friends",category:"Everyday",tag:"Same friends. Brighter days.",emoji:"♡"},
+{id:"halloween",name:"Halloween",category:"Holidays",tag:"A sweet little spooky hello.",emoji:"👻"},
 {id:"apple-orchard",name:"Apple Orchard",category:"Fall",tag:"A sweet start to the day.",emoji:"🍎",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/shared/attendance-themes/apple-orchard/thumbnail.png"},
-{id:"pumpkin-patch",name:"Pumpkin Patch",category:"Fall",tag:"Fall friends. Bright beginnings.",emoji:"🎃",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/pumpkin-patch.png"},
+{id:"pumpkin-patch",name:"Pumpkin Patch",category:"Fall",tag:"Fall friends. Bright beginnings.",emoji:"🎃",thumb:"themes/pumpkin-patch/thumbnail.png"},
 {id:"fall-leaves",name:"Fall Leaves",category:"Fall",tag:"Watch our friendship pile grow!",emoji:"🍂",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-leaves.png"},
 {id:"turkey-friends",name:"Turkey Friends",category:"Fall",tag:"Every friend adds something special.",emoji:"🦃",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/turkey-friends.png"},
 {id:"penguin-pals",name:"Penguin Pals",category:"Winter",tag:"Cool friends. Warm welcomes.",emoji:"🐧",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/penguin-pals.png"},
@@ -74,7 +76,7 @@ function renderEditingState(){
   retry.textContent=editingLockHeld?"Try saving again":"Try editing";
   // ARIA-disabled keeps the artwork/layout unchanged. Mutation gates below are
   // the enforcement boundary, including direct calls and asynchronous handlers.
-  document.querySelectorAll("#className,#saveFriend,#savePasteList,#saveAttendanceHistory,#startTodayBtn,#startNewDay,#undoBtn,#resetBtn,#addPurchasedTheme,.friend-action.move-up,.friend-action.move-down,.friend-action.delete,.theme-card,#studentGrid button,#fallLeavesZone button,#appleWaitLayer button,#appleHereLayer button,#busWaitingLayer button,#busHereLayer button").forEach(control=>control.setAttribute("aria-disabled",String(!editingLockHeld)));
+  document.querySelectorAll("#className,#saveFriend,#savePasteList,#saveAttendanceHistory,#startTodayBtn,#startNewDay,#undoBtn,#resetBtn,#addPurchasedTheme,.friend-action.move-up,.friend-action.move-down,.friend-action.delete,.theme-card,#studentGrid button,#fallLeavesZone button,#appleWaitLayer button,#appleHereLayer button,#busWaitingLayer button,#busHereLayer button,.restored-child").forEach(control=>control.setAttribute("aria-disabled",String(!editingLockHeld)));
   $("#className").readOnly=!editingLockHeld;
   renderDialogStorageWarnings();
   setAutosaveState(false);

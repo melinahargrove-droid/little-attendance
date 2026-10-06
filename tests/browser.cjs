@@ -20,7 +20,7 @@ const server=http.createServer((req,res)=>{
  if(process.env.TARGET_URL){
   assert.equal(url,'https://melinahargrove-droid.github.io/little-attendance/','Only the approved existing app may be live-tested');
   const crypto=require('node:crypto'),proof=[];
-  for(const file of ['index.html','app.js','app.css','apple-adapter.js','apple-adapter.css','bus-adapter.js','bus-adapter.css','themes/school-bus/background.png','themes/school-bus/thumbnail.png','themes/school-bus/bus-approved-layout.json','assets/home-two-actions.png','assets/one-little-teacher-logo.png','themes/apple-orchard/background.png','themes/apple-orchard/basket-apple.png','themes/apple-orchard/waiting-apple.png','themes/apple-orchard/thumbnail.png','themes/apple-orchard/theme-config.json']){
+  for(const file of ['index.html','app.js','app.css','apple-adapter.js','apple-adapter.css','bus-adapter.js','bus-adapter.css','restored-theme-layouts.js','restored-themes.js','restored-themes.css','themes/school-bus/background.png','themes/school-bus/thumbnail.png','themes/school-bus/bus-approved-layout.json','assets/home-two-actions.png','assets/one-little-teacher-logo.png','themes/apple-orchard/background.png','themes/apple-orchard/basket-apple.png','themes/apple-orchard/waiting-apple.png','themes/apple-orchard/thumbnail.png','themes/apple-orchard/theme-config.json']){
    const response=await fetch(url+file);assert.equal(response.status,200,file);
    const live=Buffer.from(await response.arrayBuffer()),expected=fs.readFileSync(path.join(root,file));
    const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
@@ -36,6 +36,7 @@ const server=http.createServer((req,res)=>{
  const state=page=>page.evaluate(()=>JSON.parse(JSON.stringify(data)));
  const namesHere=async page=>{const s=await state(page);return s.roster.filter(c=>s.present.includes(c.id)).map(c=>c.name).sort();};
  try{
+ await require('./restored-themes-browser.cjs')({scenario,seed,state,out});
  await require('./home-browser.cjs')({scenario,seed,state,out});
  await require('./theme-preview-browser.cjs')({scenario,seed,state,out});
  await require('./visual-controls-browser.cjs')({scenario,seed,state,out});

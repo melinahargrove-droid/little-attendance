@@ -43,6 +43,36 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          name: restored-pumpkin-patch-${{ matrix.browser }}-${{ github.sha }}
+          path: |
+            test-results/restored-pumpkin-patch-1280-10-*.png
+            test-results/restored-pumpkin-patch-1280-30-*.png
+            test-results/restored-pumpkin-patch-1024-10-*.png
+            test-results/restored-pumpkin-patch-1024-30-*.png
+            test-results/restored-themes-matrix.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: restored-halloween-${{ matrix.browser }}-${{ github.sha }}
+          path: |
+            test-results/restored-halloween-1280-10-*.png
+            test-results/restored-halloween-1280-30-*.png
+            test-results/restored-halloween-1024-10-*.png
+            test-results/restored-halloween-1024-30-*.png
+            test-results/restored-themes-matrix.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: restored-our-friends-${{ matrix.browser }}-${{ github.sha }}
+          path: |
+            test-results/restored-our-friends-1280-10-*.png
+            test-results/restored-our-friends-1280-30-*.png
+            test-results/restored-our-friends-1024-10-*.png
+            test-results/restored-our-friends-1024-30-*.png
+            test-results/restored-themes-matrix.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
           name: theme-preview-${{ matrix.browser }}-${{ github.sha }}
           path: |
             test-results/theme-preview-*.png

@@ -1,0 +1,334 @@
+/* Recovered artwork geometry; current app controls and lifecycle are separate. */
+#pumpkinPatchAttendance{
+  background:#f7f3eb;
+  overflow:hidden;
+}
+.pumpkin-la-viewport{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background:#f7f3eb;
+  overflow:hidden;
+}
+.pumpkin-la-board{
+  position:relative;
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+  background:url("themes/pumpkin-patch/background.png") center center / 100% 100% no-repeat;
+  font-family:system-ui,sans-serif;
+
+  /* Locked source-of-truth alignment */
+  --pumpkin-wait-name-x:0px;
+  --pumpkin-wait-name-y:-4px;
+  --pumpkin-here-photo-x:2px;
+  --pumpkin-here-photo-y:2px;
+  --pumpkin-here-photo-scale:.91;
+
+  /* Locked Harvest Crate geometry */
+  --crate-x:-20px;
+  --crate-y:55px;
+  --crate-scale:1.21;
+  --pumpkin-front-x:-20px;
+  --pumpkin-front-y:55px;
+  --pumpkin-front-scale:1.21;
+}
+.pumpkin-la-board button{font:inherit}
+
+/* Source counter container + locked source offsets:
+   Here X 30 / Y 30; Waiting X 40 / Y 30. */
+.pumpkin-la-counts{
+  position:absolute;
+  top:15.7%;
+  right:7.8%;
+  width:29.5%;
+  z-index:5000;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.pumpkin-la-counts span{
+  font-size:0;
+  color:transparent;
+  text-align:center;
+}
+.pumpkin-la-counts strong{
+  display:block;
+  color:#123554;
+  font:700 34px/1 Georgia,"Times New Roman",serif;
+}
+.pumpkin-la-counts span:nth-child(1) strong{transform:translate(30px,30px)}
+.pumpkin-la-counts span:nth-child(2) strong{transform:translate(40px,30px)}
+
+/* Exact user-drawn patch mask/zone from Little Classroom. */
+.pumpkin-patch-zone{
+  position:absolute;
+  visibility:visible;
+  left:-2%;
+  top:25%;
+  width:63%;
+  height:73%;
+  transform:none;
+  clip-path:polygon(
+    10.4% 13.5%,34.4% 9.9%,50% 11%,59% 11.7%,74.5% 16.3%,90.8% 21%,
+    99.2% 25%,98.7% 31.8%,92% 47.2%,90.8% 61.8%,89.8% 84.3%,84.7% 92.8%,
+    77.9% 96.9%,69.3% 98.6%,57.8% 97.6%,47.3% 95.5%,34.7% 94.4%,24.9% 93.9%,
+    18.6% 87.6%,6.3% 85.4%,3.9% 73%,3.6% 55.5%,4.3% 39.1%,4.6% 20.2%
+  );
+  background:transparent;
+  overflow:visible;
+  z-index:1000;
+}
+.pumpkin-patch-manual-layout{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  padding:0;
+  overflow:visible;
+}
+
+/* Waiting pumpkin composite */
+.pumpkin-patch-manual-layout .pumpkin-la-child{
+  position:absolute;
+  left:var(--pp-left);
+  top:var(--pp-top);
+  width:var(--pp-w);
+  height:var(--pp-h);
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+  background:url("themes/pumpkin-patch/waiting-pumpkin.png") center/100% 100% no-repeat;
+  transform:translate(-50%,-50%) rotate(var(--pp-rot,0deg)) scale(var(--pp-scale,1));
+  transform-origin:center;
+  touch-action:manipulation;
+  cursor:pointer;
+  overflow:visible;
+  visibility:visible;
+  color:#123554;
+}
+.pumpkin-patch-manual-layout .pumpkin-la-avatar{
+  position:absolute;
+  left:25%;
+  top:29%;
+  width:50%;
+  height:48%;
+  border-radius:50%;
+  overflow:hidden;
+  background:#fff;
+  display:grid;
+  place-items:center;
+}
+.pumpkin-patch-manual-layout .pumpkin-la-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:50%;
+}
+.pumpkin-la-initial{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#fffaf2;
+  color:#123554;
+  font-weight:900;
+  font-size:1.45em;
+}
+.pumpkin-patch-manual-layout .pumpkin-la-name{
+  display:block;
+  position:absolute;
+  left:18%;
+  bottom:10%;
+  width:64%;
+  text-align:center;
+  background:transparent;
+  color:#123554;
+  font-weight:900;
+  font-size:11px;
+  line-height:1.05;
+  transform:translate(var(--pumpkin-wait-name-x,0px),var(--pumpkin-wait-name-y,-6px));
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Full Harvest Crate back/interior layer. */
+.pumpkin-crate-asset{
+  position:absolute;
+  left:58%;
+  top:48%;
+  width:41%;
+  height:45%;
+  z-index:900;
+  background:url("themes/pumpkin-patch/harvest-crate.png") center bottom/contain no-repeat;
+  transform:translate(var(--crate-x,-20px),var(--crate-y,55px)) scale(var(--crate-scale,1.21));
+  transform-origin:center bottom;
+  pointer-events:none;
+}
+
+/* Exact live Here/crate coordinate space. */
+.pumpkin-crate-drop-zone{
+  position:absolute;
+  left:60.5%;
+  top:53%;
+  width:35.5%;
+  height:31%;
+  clip-path:polygon(0% 0%,100% 0%,100% 80%,0% 80%);
+  background:transparent;
+  overflow:visible;
+  z-index:1050;
+  visibility:visible;
+  pointer-events:auto;
+}
+.pumpkin-crate-manual-layout{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  padding:0;
+  overflow:visible;
+}
+.pumpkin-crate-manual-layout .pumpkin-la-child{
+  position:absolute;
+  left:var(--pc-left);
+  top:var(--pc-top);
+  width:var(--pc-w);
+  height:var(--pc-h);
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+  background:url("themes/pumpkin-patch/here-pumpkin.png") center/100% 100% no-repeat;
+  transform:translate(-50%,-50%) rotate(var(--pc-rot,0deg)) scale(var(--pc-scale,1));
+  transform-origin:center;
+  touch-action:manipulation;
+  cursor:pointer;
+  overflow:visible;
+  visibility:visible;
+  color:#123554;
+}
+.pumpkin-crate-manual-layout .pumpkin-la-avatar{
+  position:absolute;
+  left:25%;
+  top:30%;
+  width:50%;
+  height:50%;
+  border-radius:50%;
+  overflow:hidden;
+  background:#fff;
+  display:grid;
+  place-items:center;
+  transform:translate(var(--pumpkin-here-photo-x,2px),var(--pumpkin-here-photo-y,2px)) scale(var(--pumpkin-here-photo-scale,.91));
+  transform-origin:center center;
+}
+.pumpkin-crate-manual-layout .pumpkin-la-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:50%;
+}
+.pumpkin-crate-manual-layout .pumpkin-la-name{display:none}
+
+/* Approved front board layer above live pumpkins. */
+.pumpkin-crate-front{
+  position:absolute;
+  left:58%;
+  top:48%;
+  width:41%;
+  height:45%;
+  z-index:1200;
+  display:block;
+  background:url("themes/pumpkin-patch/harvest-crate-front.png") center bottom/contain no-repeat;
+  transform:translate(var(--pumpkin-front-x,-20px),var(--pumpkin-front-y,55px)) scale(var(--pumpkin-front-scale,1.21));
+  transform-origin:center bottom;
+  pointer-events:none;
+}
+
+/* Baked X is visible; this is only its real hit target. */
+.pumpkin-la-close{
+  position:absolute;
+  right:1.2%;
+  top:1.2%;
+  width:72px;
+  height:72px;
+  opacity:0;
+  border:0;
+  border-radius:50%;
+  z-index:5000;
+  cursor:pointer;
+}
+
+/* Composite pumpkin flight shell. No child subelement animations. */
+.pumpkin-flight-shell,
+.pumpkin-flight-shell *{
+  transition:none !important;
+  animation:none !important;
+}
+
+
+
+#halloweenAttendance{background:#172042;overflow:hidden}
+.halloween-la-viewport{position:absolute;inset:0;display:grid;place-items:center;background:#172042;overflow:hidden}
+.halloween-la-board{position:relative;width:min(100vw,177.6833vh);height:min(56.2807vw,100vh);aspect-ratio:1672/941;overflow:hidden;background:url("themes/halloween/background.png") center/100% 100% no-repeat;touch-action:manipulation;font-family:Arial,Helvetica,sans-serif}
+#halloweenWaiting,#halloweenHere{position:absolute;inset:0;pointer-events:none}
+#halloweenWaiting{z-index:20}#halloweenHere{z-index:24}
+.halloween-bucket-front-mask{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:30;pointer-events:none;user-select:none}
+.halloween-ghost,.halloween-candy{position:absolute;pointer-events:auto;transform:translate(-50%,-50%) rotate(var(--r,0deg)) scale(var(--piece-scale,1));transform-origin:center;cursor:pointer;user-select:none;touch-action:none;filter:drop-shadow(0 3px 3px rgba(14,24,55,.24));transition:filter .18s ease}
+.halloween-ghost:hover,.halloween-candy:hover{filter:drop-shadow(0 6px 7px rgba(14,24,55,.32))}
+.halloween-ghost{width:clamp(92px,8.2vw,152px);aspect-ratio:950/870}
+.halloween-candy{width:clamp(88px,7.6vw,142px);aspect-ratio:950/870}
+.halloween-ghost-photo{position:absolute;left:51.5%;top:54.3%;width:39%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;overflow:hidden;background:#e9eef5;z-index:1}
+.halloween-ghost-photo img,.halloween-candy-photo img{width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block}
+.halloween-ghost-frame,.halloween-candy-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none}
+.halloween-ghost-name{position:absolute;z-index:3;left:27%;right:19%;bottom:8.2%;height:15%;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Trebuchet MS',Arial,sans-serif;font-weight:800;font-size:clamp(9px,1vw,16px);line-height:1;color:#173b5a;text-shadow:0 1px 0 rgba(255,255,255,.75);pointer-events:none;white-space:nowrap;overflow:hidden}
+.halloween-candy-photo{position:absolute;left:51.5%;top:51.2%;width:36.5%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;overflow:hidden;background:#e9eef5;z-index:1}
+.halloween-count{position:absolute;z-index:55;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px)));font-family:Georgia,serif;font-weight:800;color:#173b5a;font-size:clamp(26px,2.8vw,50px);pointer-events:none}
+#halloweenHereCount{left:69.2%;top:26.0%;--dx:2px;--dy:-20px}
+#halloweenWaitingCount{left:91.7%;top:26.0%;--dx:0px;--dy:-20px}
+.halloween-moving{z-index:100!important;transition:left .52s cubic-bezier(.2,.75,.25,1),top .52s cubic-bezier(.2,.75,.25,1),transform .52s cubic-bezier(.2,.75,.25,1),opacity .15s ease;pointer-events:none}
+.halloween-la-close{position:absolute;right:1.4%;top:1.5%;width:68px;height:68px;border:0;border-radius:50%;background:transparent;color:transparent;font-size:0;opacity:0;z-index:80;cursor:pointer}
+@media(max-width:900px){.halloween-ghost{width:100px}.halloween-candy{width:96px}}
+
+
+
+#ourFriendsAttendance{background:#e9e1d3;overflow:hidden}
+.friends-la-viewport{position:absolute;inset:0;display:grid;place-items:center;background:#e9e1d3;overflow:hidden}
+.friends-la-board{position:relative;width:min(100vw,177.6833vh);height:min(56.2807vw,100vh);aspect-ratio:1672/941;overflow:hidden;background:#efe9df url("themes/our-friends/background.png") center/100% 100% no-repeat;--mask-cut:10px;--name-x:0px;--name-y:-2px;--name-scale:.8}
+.friends-la-waiting{position:absolute;inset:0;z-index:5;pointer-events:none}.friends-la-here{position:absolute;inset:0;z-index:7;overflow:visible;pointer-events:none}
+.friends-la-front-mask{position:absolute;z-index:20;left:59.81%;top:72.05%;width:35.71%;height:14.56%;pointer-events:none;background:url("themes/our-friends/here-box-front-occlusion.png") center/100% 100% no-repeat;clip-path:inset(var(--mask-cut,10px) 0 0 0)}
+.friends-la-kid{position:absolute;width:8.2%;aspect-ratio:1222/1287;transform-origin:50% 50%;touch-action:none;cursor:pointer;user-select:none;pointer-events:auto;transition:left .5s ease,top .5s ease,width .5s ease,transform .5s ease}
+.friends-la-kid.moving{z-index:30}
+.friends-la-kid .photo{position:absolute;left:13.4%;top:15.3%;width:73.2%;height:57.7%;object-fit:cover;z-index:1;border-radius:1.5%;pointer-events:none}
+.friends-la-kid .frame{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none}
+.friends-la-kid .name{position:absolute;left:4%;right:4%;bottom:2%;height:22%;display:flex;align-items:center;justify-content:center;z-index:3;font-family:"Comic Sans MS","Trebuchet MS",sans-serif;font-weight:700;font-size:clamp(8px,1.1vw,18px);line-height:1.25;color:#173550;text-shadow:0 1px rgba(255,255,255,.8);pointer-events:none;white-space:nowrap;overflow:visible;padding-bottom:3%;box-sizing:border-box;transform:translate(var(--name-x,0px),var(--name-y,-2px)) scale(var(--name-scale,.8));transform-origin:center}
+.friends-la-initial{position:absolute;left:13.4%;top:15.3%;width:73.2%;height:57.7%;display:grid;place-items:center;background:#f7f2ea;color:#123554;font:700 30px Georgia,serif;z-index:1}
+.friends-la-close{position:absolute;right:1.2%;top:1.2%;width:68px;height:68px;opacity:0;border:0;background:transparent;z-index:50;cursor:pointer}
+
+/* Integration safety: decorative masks never intercept the child underneath. */
+.restored-child{border:0;padding:0;background-color:transparent;box-shadow:none;color:#123554}
+.restored-child:focus-visible{outline:3px solid #123858;outline-offset:2px}
+.restored-child img{pointer-events:none}
+.restored-initial{position:absolute;inset:0;display:grid;place-items:center;background:#fffaf2;font:bold 20px Georgia,serif;color:#123554}
+.restored-initial[hidden]{display:none}
+.pumpkin-la-avatar img{position:absolute;inset:0}
+.friends-la-photo{position:absolute;left:13.4%;top:15.3%;width:73.2%;height:57.7%;overflow:hidden;z-index:1;border-radius:1.5%;pointer-events:none}
+.friends-la-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.friends-la-kid .name{overflow:hidden;text-overflow:ellipsis}
+.restored-flight{z-index:2147483000;pointer-events:none;overflow:visible;padding:0;margin:0}
+.restored-flight *{pointer-events:none!important;transition:none!important}
+.restored-tools{position:absolute;left:12px;bottom:10px;z-index:6000}
+.restored-tools button{border:1px solid #bccbd4;border-radius:12px;padding:8px 13px;background:rgba(255,253,248,.95);color:#123858;font-weight:700}
+.restored-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* Our Friends has no painted X. Keep the current app's visible Close action. */
+.friends-la-close{opacity:1;width:auto;height:auto;min-width:60px;padding:8px 12px;border:1px solid #bccbd4;border-radius:12px;color:#123858;background:#fffdf8;font-size:14px;font-weight:700}
+.pumpkin-la-close:focus-visible,.halloween-la-close:focus-visible{opacity:1;outline:3px solid #123858;background:#fffdf8;color:#123858;font-size:14px}
+@media(prefers-reduced-motion:reduce){.restored-child{transition:none}}
+
+/* Fit Halloween art and all overlays to the same uncropped source coordinate space. */
+.halloween-la-close{opacity:1;width:auto;height:auto;min-width:60px;padding:8px 12px;border:1px solid #bccbd4;border-radius:12px;color:#123858;background:#fffdf8;font-size:14px;font-weight:700}

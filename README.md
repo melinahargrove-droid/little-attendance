@@ -211,3 +211,27 @@ and can hide a child completely. No slots, scales or piece sizes are changed.
 All five class-size buckets are checked at 1024×768, 1280×720 and 1671×941,
 including real taps inside photos, arrivals, Undo and roster renaming. The three
 existing external image URLs remain dependencies; they are not an offline cache.
+
+## Recovered theme renderers (review candidate)
+
+Pumpkin Patch, Halloween and Our Friends retain the recovered v6.0 art and fixed
+roster-slot geometry. The thirteen image files have SHA-256 provenance in
+`themes/restored-source-manifest.json`; original source is
+`Little_Attendance_v6_0_Our_Friends_Free_Theme.zip`.
+The Pumpkin crate front, Halloween bucket mask, and Our Friends box front remain
+above the Here pieces. Only the tapped child's composite moves; other slots do
+not compact. Names use literal text and photos accept only embedded raster data.
+Attendance Controls, Undo, Reset, dated history and the editing lock are the
+current application's shared controls. Animations cannot queue delayed state
+writes after navigation or reset. Missing artwork falls back to the usable list.
+
+This restoration does not import the historical build's ownership migration or
+change the current default selection. Historically Our Friends was included
+free and selected by default, while that build also auto-unlocked the other
+finished themes. That commercial behavior is not assumed here. Newly cataloged
+entries use the existing ownership mechanism, so absent entitlements appear
+locked. This is a review candidate: settle intended Our Friends availability
+before publication. No prices, purchases or entitlements are created by this PR.
+
+Computer/classroom-display support remains the target. Browser tests use only
+fictional rosters. Overlapping Here piles preserve keyboard access to all pieces.

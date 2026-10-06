@@ -92,7 +92,7 @@ test('bus failed background falls back safely and late load events never navigat
 test('bus adapter leaves Apple, other themes, generic actions, and empty classroom route intact',async()=>{
  const a=create(fixture(0));a.run('openAttendance()');assert.ok(a.node('#classroom.active'));
  const b=create(fixture(2,{selectedTheme:'apple-orchard'}));b.run('openAttendance()');await new Promise(r=>setImmediate(r));assert.ok(b.node('#appleAttendance.active'));b.node('#appleWaitLayer button').click();await new Promise(r=>setImmediate(r));b.node('#undoBtn').click();assert.deepEqual(b.state().present,[]);
- b.run('data.selectedTheme="fall-leaves";openAttendance()');assert.ok(b.node('#fallLeavesAttendance.active'));assert.equal(b.run('themeCatalog.length'),19);
+ b.run('data.selectedTheme="fall-leaves";openAttendance()');assert.ok(b.node('#fallLeavesAttendance.active'));assert.equal(b.run('themeCatalog.length'),21);
 });
 
 test('overflow fitting chooses readable rows inside the same shelter and caches stable slots',()=>{
