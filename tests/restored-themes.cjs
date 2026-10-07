@@ -21,6 +21,39 @@ test('all thirteen recovered images are byte-preserved and geometry has every lo
  for(const item of manifest.assets)assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,item.path))).digest('hex'),item.sha256,item.path);
  const a=create();for(const n of [10,15,20,25,30]){for(const name of ['PUMPKIN_FINAL_PATCH_LAYOUTS','PUMPKIN_FINAL_CRATE_LAYOUTS'])assert.equal(a.run(name+'['+n+'].length'),n);for(const name of ['HALLOWEEN_WAITING','HALLOWEEN_HERE'])assert.equal(a.run(name+'['+n+'].positions.length'),n);}assert.equal(a.run('OUR_FRIENDS_WAITING.length'),30);assert.equal(a.run('OUR_FRIENDS_HERE.length'),30);
 });
+test('thumbnail-only derivatives retain verified provenance without replacing recovered board assets',()=>{
+ const manifest=JSON.parse(fs.readFileSync(path.join(root,'themes/thumbnail-source-manifest.json')));
+ assert.deepEqual(manifest.assets.map(item=>item.theme),['our-friends','halloween','pumpkin-patch']);
+ for(const item of manifest.assets){
+  const bytes=fs.readFileSync(path.join(root,item.path));
+  assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),item.sha256,item.path);
+  assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+  assert.deepEqual([bytes.readUInt32BE(16),bytes.readUInt32BE(20)],[1254,1254]);
+  assert.equal(bytes[25],6,'The thumbnail retains RGBA transparency');
+  assert.ok(item.prompt.length>100);
+  for(const source of item.sources)assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,source.path))).digest('hex'),source.sha256,source.path);
+ }
+});
+for(const [theme,label] of [['our-friends','Our Friends'],['halloween','Halloween'],['pumpkin-patch','Pumpkin Patch']]){
+ test(label+' shares its complete, named local illustration in chooser and current card without startup writes',()=>{
+  const a=create(theme,3),before=a.state(),raw=a.store.get(KEY),source='themes/'+theme+'/thumbnail-illustration.png';
+  a.run('renderThemeGrid();renderCurrentTheme()');
+  const card=a.nodes('.theme-card').find(el=>el.querySelector('h3').textContent===label),chooser=card.querySelector('.theme-art img'),current=a.node('#currentThemeArt img');
+  assert.equal(card.querySelector('.theme-art').dataset.theme,theme);assert.equal(a.node('#currentThemeArt').dataset.theme,theme);
+  for(const img of [chooser,current]){assert.equal(img.getAttribute('src'),source);assert.equal(img.alt,label+' theme illustration');}
+  assert.equal(a.node('#currentThemeName').textContent,label);assert.match(card.textContent,/Selected/);
+  assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);assert.equal(a.writes.length,0);
+  chooser.dispatchEvent(new a.w.Event('error'));current.dispatchEvent(new a.w.Event('error'));
+  assert.equal(card.querySelector('h3').textContent,label);assert.equal(a.node('#currentThemeName').textContent,label);
+  assert.deepEqual(a.state(),before);assert.equal(a.writes.length,0);
+ });
+}
+test('thumbnail artwork does not unlock Halloween or Pumpkin Patch or disturb unrelated thumbnail metadata',()=>{
+ const a=create('our-friends',3,{ownedThemes:['school-bus','apple-orchard']});a.run('renderThemeGrid()');const before=a.state(),raw=a.store.get(KEY);
+ for(const label of ['Halloween','Pumpkin Patch']){const card=a.nodes('.theme-card').find(el=>el.querySelector('h3').textContent===label);assert.match(card.textContent,/Locked/);assert.ok(card.querySelector('.theme-art img'));card.click();assert.deepEqual(a.state(),before);assert.equal(a.store.get(KEY),raw);}
+ assert.equal(a.writes.length,0);assert.equal(a.run('getThemeById("school-bus").thumb'),'themes/school-bus/thumbnail.png');
+ assert.equal(a.run('getThemeById("apple-orchard").thumb'),'themes/apple-orchard/thumbnail.png');
+});
 for(const [theme,screen,waiting,here,close] of configs){
  test(theme+' uses fixed roster slots through all five densities, reverse check-ins, return, Undo and Reset',()=>{
   for(const n of [10,15,20,25,30]){

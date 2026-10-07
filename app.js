@@ -20,10 +20,10 @@ let data={
 
 const themeCatalog=[
 {id:"school-bus",name:"School Bus",category:"Everyday",tag:"Good friends. Brighter days.",emoji:"🚌",thumb:"themes/school-bus/thumbnail.png"},
-{id:"our-friends",name:"Our Friends",category:"Everyday",tag:"Included free with Little Attendance.",emoji:"♡"},
-{id:"halloween",name:"Halloween",category:"Holidays",tag:"A sweet little spooky hello.",emoji:"👻"},
+{id:"our-friends",name:"Our Friends",category:"Everyday",tag:"Included free with Little Attendance.",emoji:"♡",thumb:"themes/our-friends/thumbnail-illustration.png",thumbAlt:"Our Friends theme illustration"},
+{id:"halloween",name:"Halloween",category:"Holidays",tag:"A sweet little spooky hello.",emoji:"👻",thumb:"themes/halloween/thumbnail-illustration.png",thumbAlt:"Halloween theme illustration"},
 {id:"apple-orchard",name:"Apple Orchard",category:"Fall",tag:"A sweet start to the day.",emoji:"🍎",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/shared/attendance-themes/apple-orchard/thumbnail.png"},
-{id:"pumpkin-patch",name:"Pumpkin Patch",category:"Fall",tag:"Fall friends. Bright beginnings.",emoji:"🎃",thumb:"themes/pumpkin-patch/thumbnail.png"},
+{id:"pumpkin-patch",name:"Pumpkin Patch",category:"Fall",tag:"Fall friends. Bright beginnings.",emoji:"🎃",thumb:"themes/pumpkin-patch/thumbnail-illustration.png",thumbAlt:"Pumpkin Patch theme illustration"},
 {id:"fall-leaves",name:"Fall Leaves",category:"Fall",tag:"Watch our friendship pile grow!",emoji:"🍂",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/fall-leaves.png"},
 {id:"turkey-friends",name:"Turkey Friends",category:"Fall",tag:"Every friend adds something special.",emoji:"🦃",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/turkey-friends.png"},
 {id:"penguin-pals",name:"Penguin Pals",category:"Winter",tag:"Cool friends. Warm welcomes.",emoji:"🐧",thumb:"https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/penguin-pals.png"},
@@ -565,7 +565,7 @@ function renderCurrentTheme(){
   $("#currentThemeTag").textContent=t.tag;
   const art=$("#currentThemeArt");
   art.dataset.theme=t.id;
-  art.innerHTML=t.thumb?`<img src="${t.thumb}" alt="">`:`<span>${t.emoji||"♡"}</span>`;
+  art.innerHTML=t.thumb?`<img src="${t.thumb}" alt="${t.thumbAlt||""}">`:`<span>${t.emoji||"♡"}</span>`;
 }
 function friendInitials(name){
   const parts=name.trim().split(/\s+/).filter(Boolean);
@@ -864,7 +864,7 @@ function renderThemeGrid(){
     const b=document.createElement("button");
     b.className="theme-card"+(isSelected?" selected":"");
     b.innerHTML=`<span class="category">${t.category}</span>
-      <div class="theme-art">${t.thumb?`<img src="${t.thumb}" alt="">`:t.emoji}</div>
+      <div class="theme-art" data-theme="${t.id}">${t.thumb?`<img src="${t.thumb}" alt="${t.thumbAlt||""}">`:t.emoji}</div>
       <div class="theme-info">
         <h3>${t.name}</h3>
         <p>${t.tag}</p>
