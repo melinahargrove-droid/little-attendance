@@ -371,6 +371,14 @@ dialog::backdrop{background:rgba(18,56,88,.28)}
   object-fit:contain;
   object-position:center;
 }
+/* Keep square images from contributing an intrinsic grid height to the 4:3 frame. */
+.pretty-grid .theme-art:is([data-theme="our-friends"],[data-theme="halloween"],[data-theme="pumpkin-patch"]){
+  position:relative;
+}
+.pretty-grid .theme-art:is([data-theme="our-friends"],[data-theme="halloween"],[data-theme="pumpkin-patch"]) img{
+  position:absolute;
+  inset:0;
+}
 .current-theme-copy{
   padding:20px 20px 18px;
   display:flex;flex-direction:column;

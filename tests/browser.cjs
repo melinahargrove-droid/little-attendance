@@ -37,6 +37,9 @@ const server=http.createServer((req,res)=>{
  const namesHere=async page=>{const s=await state(page);return s.roster.filter(c=>s.present.includes(c.id)).map(c=>c.name).sort();};
  try{
  await require('./restored-themes-browser.cjs')({scenario,seed,state,out});
+ await require('./pumpkin-mask-browser.cjs')({scenario,seed,state,out});
+ await require('./apple-mask-browser.cjs')({scenario,seed,state,out});
+ await require('./review-frame-browser.cjs')({scenario,seed,state,out});
  await require('./home-browser.cjs')({scenario,seed,state,out});
  await require('./theme-preview-browser.cjs')({scenario,seed,state,out});
  await require('./visual-controls-browser.cjs')({scenario,seed,state,out});

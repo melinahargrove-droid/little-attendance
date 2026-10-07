@@ -9,13 +9,13 @@ async function inspect(image){
   const width=img.naturalWidth*scale,height=img.naturalHeight*scale,left=box.x+(box.width-width)/2,top=box.y+(box.height-height)/2;
   const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
   const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
-  return{theme:img.parentElement.dataset.theme,source:img.getAttribute('src'),alt:img.alt,fit:css.objectFit,position:css.objectPosition,natural:[img.naturalWidth,img.naturalHeight],rendered:{left,top,width,height},insideFrame:left>=frame.x-.5&&top>=frame.y-.5&&left+width<=frame.right+.5&&top+height<=frame.bottom+.5,insideViewport:frame.x>=0&&frame.y>=0&&frame.right<=innerWidth&&frame.bottom<=innerHeight,centerAlpha:ctx.getImageData(canvas.width/2,canvas.height/2,1,1).data[3],cornerAlpha:ctx.getImageData(0,0,1,1).data[3]};
+  return{theme:img.parentElement.dataset.theme,source:img.getAttribute('src'),alt:img.alt,fit:css.objectFit,position:css.objectPosition,natural:[img.naturalWidth,img.naturalHeight],frame:{left:frame.x,top:frame.y,width:frame.width,height:frame.height},imageBox:{left:box.x,top:box.y,width:box.width,height:box.height},rendered:{left,top,width,height},insideFrame:left>=frame.x-.5&&top>=frame.y-.5&&left+width<=frame.right+.5&&top+height<=frame.bottom+.5,insideViewport:frame.x>=0&&frame.y>=0&&frame.right<=innerWidth&&frame.bottom<=innerHeight,centerAlpha:ctx.getImageData(canvas.width/2,canvas.height/2,1,1).data[3],cornerAlpha:ctx.getImageData(0,0,1,1).data[3]};
  });
 }
 function assertWhole(metrics,theme,label){
  assert.equal(metrics.theme,theme);assert.equal(metrics.source,'themes/'+theme+'/thumbnail-illustration.png');assert.equal(metrics.alt,label+' theme illustration');
  assert.equal(metrics.fit,'contain');assert.equal(metrics.position,'50% 50%');assert.deepEqual(metrics.natural,[1254,1254]);
- assert.equal(metrics.insideFrame,true);assert.equal(metrics.insideViewport,true);assert.ok(Math.abs(metrics.rendered.width-metrics.rendered.height)<.01);
+ assert.equal(metrics.insideFrame,true,'The complete illustration fits its art frame: '+JSON.stringify(metrics));assert.equal(metrics.insideViewport,true,'The art frame fits the viewport: '+JSON.stringify(metrics));assert.ok(Math.abs(metrics.rendered.width-metrics.rendered.height)<.01);
  assert.ok(metrics.centerAlpha>=245,'The thumbnail has a filled painted center, not a portrait hole');assert.equal(metrics.cornerAlpha,0,'The thumbnail keeps its transparent outer margin');
 }
 module.exports=async({scenario,seed,state,out})=>{

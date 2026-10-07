@@ -16,6 +16,12 @@ function create(theme='pumpkin-patch',n=30,extra={},options={}){
 }
 function click(a,zone,id){a.node('#'+zone+' [data-child-id="'+id+'"]').click();}
 
+test('Pumpkin Here occlusion uses the unchanged crate image in its own source space, without an invisible slot-zone cutoff',()=>{
+ const a=create(),style=a.w.document.createElement('style');style.textContent=fs.readFileSync(path.join(root,'restored-themes.css'),'utf8');a.w.document.head.appendChild(style);
+ const front=a.node('svg.pumpkin-crate-front');assert.equal(front.getAttribute('viewBox'),'0 0 1731 909');assert.equal(front.getAttribute('preserveAspectRatio'),'xMidYMax meet');assert.equal(front.querySelector('image').getAttribute('href'),'themes/pumpkin-patch/harvest-crate.png');assert.equal(front.querySelector('clipPath').getAttribute('clipPathUnits'),'userSpaceOnUse');assert.equal(a.w.getComputedStyle(a.node('.pumpkin-crate-drop-zone')).clipPath,'none');
+ assert.equal(a.w.getComputedStyle(front).transform,a.w.getComputedStyle(a.node('.pumpkin-crate-asset')).transform);assert.ok(Number(a.w.getComputedStyle(front).zIndex)>Number(a.w.getComputedStyle(a.node('.pumpkin-crate-drop-zone')).zIndex));
+});
+
 test('all thirteen recovered images are byte-preserved and geometry has every locked slot',()=>{
  const manifest=JSON.parse(fs.readFileSync(path.join(root,'themes/restored-source-manifest.json')));assert.equal(manifest.assets.length,13);
  for(const item of manifest.assets)assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,item.path))).digest('hex'),item.sha256,item.path);
@@ -33,6 +39,15 @@ test('thumbnail-only derivatives retain verified provenance without replacing re
   assert.ok(item.prompt.length>100);
   for(const source of item.sources)assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,source.path))).digest('hex'),source.sha256,source.path);
  }
+});
+test('only the three new chooser illustrations are positioned within their existing aspect-ratio frames',()=>{
+ const a=create('our-friends',3),style=a.w.document.createElement('style');style.textContent=fs.readFileSync(path.join(root,'app.css'),'utf8');a.w.document.head.appendChild(style);a.run('renderThemeGrid();renderCurrentTheme()');
+ for(const theme of ['our-friends','halloween','pumpkin-patch']){
+  const frame=a.node('.theme-art[data-theme="'+theme+'"]'),image=frame.querySelector('img');
+  assert.equal(a.w.getComputedStyle(frame).position,'relative');assert.equal(a.w.getComputedStyle(image).position,'absolute');assert.equal(a.w.getComputedStyle(image).inset,'0');assert.equal(a.w.getComputedStyle(image).objectFit,'contain');
+ }
+ for(const theme of ['school-bus','apple-orchard'])assert.notEqual(a.w.getComputedStyle(a.node('.theme-art[data-theme="'+theme+'"] img')).position,'absolute');
+ assert.notEqual(a.w.getComputedStyle(a.node('#currentThemeArt img')).position,'absolute');
 });
 for(const [theme,label] of [['our-friends','Our Friends'],['halloween','Halloween'],['pumpkin-patch','Pumpkin Patch']]){
  test(label+' shares its complete, named local illustration in chooser and current card without startup writes',()=>{

@@ -43,6 +43,21 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          name: pumpkin-mask-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/pumpkin-mask-*
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apple-mask-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/apple-mask-*
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: review-frame-${{ matrix.browser }}-${{ github.sha }}
+          path: test-results/review-frame-*
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
           name: restored-pumpkin-patch-${{ matrix.browser }}-${{ github.sha }}
           path: |
             test-results/restored-pumpkin-patch-1280-10-*.png

@@ -178,7 +178,9 @@
   top:53%;
   width:35.5%;
   height:31%;
-  clip-path:polygon(0% 0%,100% 0%,100% 80%,0% 80%);
+  /* The visible front rail, not an unrelated percentage of this slot zone,
+     occludes Here pumpkins. An extra clip here cut them off over the straw. */
+  clip-path:none;
   background:transparent;
   overflow:visible;
   z-index:1050;
@@ -244,8 +246,9 @@
   height:45%;
   z-index:1200;
   display:block;
-  background:url("themes/pumpkin-patch/harvest-crate-front.png") center bottom/contain no-repeat;
-  transform:translate(var(--pumpkin-front-x,-20px),var(--pumpkin-front-y,55px)) scale(var(--pumpkin-front-scale,1.21));
+  /* SVG uses unchanged crate pixels and a source-space front-edge clip.
+     xMidYMax meet matches the back layer's center bottom/contain exactly. */
+  transform:translate(var(--crate-x,-20px),var(--crate-y,55px)) scale(var(--crate-scale,1.21));
   transform-origin:center bottom;
   pointer-events:none;
 }
