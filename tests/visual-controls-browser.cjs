@@ -33,9 +33,9 @@ module.exports=async({scenario,seed,state,out})=>{
     await target.setViewportSize(viewport);const before=await state(target);await target.locator('#takeHotspot').click();await target.locator('.apple-la-bg').evaluate(image=>image.decode());
     const close=target.locator('#appleClose'),label=close.locator('.apple-la-close-label');
     assert.equal(await close.getAttribute('aria-label'),'Close attendance');assert.equal(await label.textContent(),'Close');
-    const fallback=viewport.width/viewport.height<1.75||viewport.width/viewport.height>1.8;assert.equal(await label.isVisible(),fallback);
+    const stage=await target.locator('.apple-la-stage').boundingBox(),fallback=stage.width/stage.height<1.75||stage.width/stage.height>1.8;assert.equal(fallback,false,'The full original artwork, including the painted X, is visible');assert.equal(await label.isVisible(),fallback);
     const metrics=await close.evaluate(button=>{const b=button.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return{x:b.x,y:b.y,width:b.width,height:b.height,hit:hit===button||button.contains(hit)};});
-    assert.ok(Math.abs(metrics.x-viewport.width*.928)<1);assert.equal(metrics.y,0);assert.ok(Math.abs(metrics.width-viewport.width*.072)<1);assert.ok(Math.abs(metrics.height-viewport.height*.11)<1);assert.equal(metrics.hit,true);
+    assert.ok(Math.abs(metrics.x-(stage.x+stage.width*.928))<1);assert.ok(Math.abs(metrics.y-stage.y)<1);assert.ok(Math.abs(metrics.width-stage.width*.072)<1);assert.ok(Math.abs(metrics.height-stage.height*.11)<1);assert.equal(metrics.hit,true);
     await close.focus();await target.keyboard.press('Tab');await target.keyboard.press('Shift+Tab');assert.equal(await close.evaluate(button=>button===document.activeElement),true);assert.equal(await close.evaluate(button=>getComputedStyle(button).outlineStyle),'solid');
     await target.screenshot({path:path.join(out,'visual-apple-'+mode+'-'+viewport.width+'.png')});
     await target.keyboard.press('Enter');assert.equal(await target.locator('#dashboard.active').count(),1);assert.deepEqual(await state(target),before);

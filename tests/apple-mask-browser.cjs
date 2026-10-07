@@ -1,4 +1,4 @@
-// Physical arrival taps, original cover-art mask geometry and review-frame resizing.
+// Physical arrival taps, uncropped original-art mask geometry and review-frame resizing.
 // Fictional QA names only. Screenshots are captured by Chromium/WebKit CI.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const config=JSON.parse(fs.readFileSync(path.join(__dirname,'../themes/apple-orchard/theme-config.json')));
@@ -10,28 +10,35 @@ const cases=[
  {width:1920,height:720,inset:64}
 ];
 const fixture=n=>({schemaVersion:1,className:'QA Apple Basket',roster:Array.from({length:n},(_,i)=>({id:'qa-'+i,name:'QA Apple '+String(i+1).padStart(2,'0')})),present:[],history:[],selectedTheme:'apple-orchard',ownedThemes:['apple-orchard','school-bus','fall-leaves']});
-const close=(a,b,message)=>assert.ok(Math.abs(a-b)<.15,message+': '+a+' ≈ '+b);
+// WebKit may round centered fractional layout boxes to the nearest CSS pixel.
+const close=(a,b,message)=>assert.ok(Math.abs(a-b)<=.51,message+': '+a+' ≈ '+b);
 async function inspect(page){
  return page.evaluate(points=>{
   const box=node=>{const r=node.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};};
   const stage=document.querySelector('.apple-la-stage'),bg=stage.querySelector('.apple-la-bg'),front=stage.querySelector('.apple-la-front');
-  const b=box(bg),s=Math.max(b.width/bg.naturalWidth,b.height/bg.naturalHeight),width=bg.naturalWidth*s,height=bg.naturalHeight*s;
+  const b=box(bg),s=Math.min(b.width/bg.naturalWidth,b.height/bg.naturalHeight),width=bg.naturalWidth*s,height=bg.naturalHeight*s;
   const paint={x:b.x+(b.width-width)/2,y:b.y+(b.height-height)/2,width,height};
   const f=box(front),frontStyle=getComputedStyle(front),closeLabel=stage.querySelector('.apple-la-close-label');
   const clip=frontStyle.clipPath.match(/[-\d.]+%/g).map(Number.parseFloat);
-  return{stage:box(stage),parent:box(stage.parentElement),paint,front:f,natural:[bg.naturalWidth,bg.naturalHeight],fit:getComputedStyle(bg).objectFit,containerType:getComputedStyle(stage).containerType,
+  return{stage:box(stage),parent:box(stage.parentElement),background:b,paint,front:f,natural:[bg.naturalWidth,bg.naturalHeight],fit:getComputedStyle(bg).objectFit,containerType:getComputedStyle(stage).containerType,parentContainerType:getComputedStyle(stage.parentElement).containerType,
+   // The original title occupies this source-pixel rectangle; no point may be cropped.
+   title:{x:paint.x+paint.width*860/1672,y:paint.y+paint.height*24/941,width:paint.width*640/1672,height:paint.height*136/941},
    points:points.map((p,i)=>({paint:[paint.x+paint.width*p.x/100,paint.y+paint.height*p.y/100],clip:[f.x+f.width*clip[i*2]/100,f.y+f.height*clip[i*2+1]/100]})),
    clipping:frontStyle.clipPath,frontZ:Number(frontStyle.zIndex),pieceLayerZ:Number(getComputedStyle(stage.querySelector('.apple-la-here')).zIndex),frontPointerEvents:frontStyle.pointerEvents,
    closeLabelVisible:getComputedStyle(closeLabel).display!=='none',scroll:[stage.parentElement.scrollWidth,stage.parentElement.scrollHeight]};
  },config.basket.frontMask);
 }
 function assertAligned(metrics){
- assert.deepEqual(metrics.natural,[1672,941]);assert.equal(metrics.fit,'cover');assert.equal(metrics.containerType,'size');
- for(const key of ['x','y','width','height']){close(metrics.stage[key],metrics.parent[key],'stage fits its actual parent '+key);close(metrics.front[key],metrics.paint[key],'mask box follows covered artwork '+key);}
+ assert.deepEqual(metrics.natural,[1672,941]);assert.equal(metrics.fit,'contain');assert.equal(metrics.containerType,'size');assert.equal(metrics.parentContainerType,'size');
+ const {stage,parent,paint,title}=metrics,scale=Math.min(parent.width/1672,parent.height/941);
+ close(stage.width,1672*scale,'stage is maximally fitted at original aspect ratio');close(stage.height,941*scale,'stage has uncropped artwork height');
+ close(stage.x,parent.x+(parent.width-stage.width)/2,'stage is horizontally centered');close(stage.y,parent.y+(parent.height-stage.height)/2,'stage is vertically centered');
+ for(const key of ['x','y','width','height']){close(metrics.background[key],stage[key],'background shares fitted stage rectangle '+key);close(metrics.front[key],stage[key],'foreground shares fitted stage rectangle '+key);close(paint[key],stage[key],'complete source image fills stage without crop '+key);}
+ for(const rect of [stage,paint,title]){assert.ok(rect.x>=parent.x-.51&&rect.y>=parent.y-.51&&rect.x+rect.width<=parent.x+parent.width+.51&&rect.y+rect.height<=parent.y+parent.height+.51,'whole artwork and title remain inside the actual host');}
  for(const point of metrics.points){close(point.paint[0],point.clip[0],'mask x uses original art origin');close(point.paint[1],point.clip[1],'mask y uses original art origin');}
  assert.ok(metrics.frontZ>metrics.pieceLayerZ);assert.equal(metrics.frontPointerEvents,'none');assert.match(metrics.clipping,/^polygon\(/);
- assert.ok(metrics.scroll[0]<=metrics.stage.width+1);assert.ok(metrics.scroll[1]<=metrics.stage.height+1);
- const aspect=metrics.stage.width/metrics.stage.height;assert.equal(metrics.closeLabelVisible,aspect<1.75||aspect>1.8);
+ assert.ok(metrics.scroll[0]<=parent.width+1);assert.ok(metrics.scroll[1]<=parent.height+1);
+ assert.equal(metrics.closeLabelVisible,false,'uncropped artwork preserves the original painted Close control');
 }
 const slots=page=>page.locator('#appleWaitLayer button').evaluateAll(buttons=>buttons.map(button=>({name:button.getAttribute('aria-label'),left:button.style.left,top:button.style.top,width:button.style.width,height:button.style.height,transform:button.style.transform})));
 module.exports=async({scenario,seed,state,out})=>{
