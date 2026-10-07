@@ -1,0 +1,68 @@
+{
+  "scope": "Separate chooser and Current Theme illustrations only; all recovered board assets and locked layouts remain unchanged.",
+  "created": "2026-10-06",
+  "tool": "Built-in image_gen.imagegen; referenced_image_paths edits, transparent_background true. No fallback CLI.",
+  "sourceManifest": "themes/restored-source-manifest.json",
+  "originalPumpkinScene": {
+    "path": "themes/pumpkin-patch/thumbnail.png",
+    "sha256": "b521284ca1e54a235802a72381830fa8237f5cf0cf2ae6d9ebdaca7e70ef2def",
+    "status": "Retained byte-for-byte for provenance; no longer used by theme previews."
+  },
+  "assets": [
+    {
+      "theme": "our-friends",
+      "path": "themes/our-friends/thumbnail-illustration.png",
+      "sha256": "48e996e968eb0fcbca9930276e0a55d286e0aee26f9819a2847ad418c576011a",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "RGBA PNG",
+      "sources": [
+        {
+          "path": "themes/our-friends/polaroid.png",
+          "sha256": "bae293e9ca14a257c8c761d13edd9c313a38fe55f810855f41671a142aeedba4"
+        }
+      ],
+      "prompt": "Use case: precise-object-edit. Create a separate Our Friends theme thumbnail for the children's Little Attendance app from the supplied cream watercolor instant-photo frame. Preserve its ivory paper frame, subtle painted texture, rounded corners, and round honey-colored wooden pin at the top. Fill the transparent photograph window with a simple painted pale sky-blue wash and one large warm coral watercolor heart in the center. The heart signifies classroom friendship. Keep the frame face upright and the lower ivory caption margin blank. The artwork should read as a warm pinned friendship picture rather than an empty portrait placeholder. Single full frame, comfortably centered on a square transparent canvas, no clipping and modest transparent outer margin, maximum legibility at small thumbnail size. Do not add people, photographs, words, letters, logos, other frames, or scenery. Genuinely transparent background outside the paper frame, opaque painted picture inside. Keep the recovered hand-painted preschool style."
+    },
+    {
+      "theme": "halloween",
+      "path": "themes/halloween/thumbnail-illustration.png",
+      "sha256": "3523cc3c7dbd4cebab7efd60a28626f745603adfa68b57ac775dd24b6020a250",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "RGBA PNG",
+      "sources": [
+        {
+          "path": "themes/halloween/background.png",
+          "sha256": "c55323172663fcdecdbca8a7341bd6ce7347ffcd43f0b7724187dcd8f0519be4"
+        },
+        {
+          "path": "themes/halloween/ghost-waiting.png",
+          "sha256": "fda7ee964cdf9b8b6e8f37055eba73b2c5897fa17238a7da57dbf8cea42b7174"
+        }
+      ],
+      "prompt": "Use case: compositing. Make a separate Halloween theme thumbnail for the children's Little Attendance app using the supplied recovered watercolor art. Image 1 is a reference for the orange smiling pumpkin trick-or-treat BUCKET with dark curved handle on the right; image 2 is a reference for the friendly smiling white watercolor GHOST. Isolate and compose that bucket with one smaller waving ghost peeking from inside and slightly behind its handle. The pumpkin bucket is the main large subject. Keep the source orange/black bucket design and friendly watercolor look; ghost has a COMPLETE white body, no circular portrait opening and no nameplate. Compact centered emblem, square canvas, leave comfortable transparent margins; full bucket and full arcing handle visible; warm preschool mood. No text, no labels, no house, no scenery, no extra objects, no photos, no borders. Genuinely transparent background; preserve textured painted detail. This is a separate thumbnail only, do not reproduce the attendance board."
+    },
+    {
+      "theme": "pumpkin-patch",
+      "path": "themes/pumpkin-patch/thumbnail-illustration.png",
+      "sha256": "c0a68fdad4630374f1c375369113727d0de2c53507e47f8c6c2122b6f0019a5e",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "RGBA PNG",
+      "sources": [
+        {
+          "path": "themes/pumpkin-patch/waiting-pumpkin.png",
+          "sha256": "951419cf456a83dcbbcd900aa03c32986fa35068f00a261a2f443840bc0bbd8a"
+        }
+      ],
+      "prompt": "Use case: precise-object-edit. Create a thumbnail-only derivative of the provided watercolor pumpkin frame for a children's classroom app. Keep the pumpkin's warm textured watercolor orange, rounded lobes, natural brown stem and green upper leaf/curl motif. Fill the entire circular portrait hole with convincing continuous pumpkin flesh and vertical watercolor ribs so this is ONE LARGE SOLID PUMPKIN. Remove the wooden nameplate and lower decorative cluster; complete the lower pumpkin contour naturally. No face, no portrait opening, no text, no frame, no scene, no extra pumpkins. Center the single complete pumpkin large, using around 84% of canvas width and height, with comfortable transparent margins and no clipping. A simple friendly watercolor pumpkin illustration, genuinely transparent RGBA background. This is a new separate thumbnail, original board art must not change."
+    }
+  ]
+}

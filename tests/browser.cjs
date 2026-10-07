@@ -36,9 +36,13 @@ const server=http.createServer((req,res)=>{
  const state=page=>page.evaluate(()=>JSON.parse(JSON.stringify(data)));
  const namesHere=async page=>{const s=await state(page);return s.roster.filter(c=>s.present.includes(c.id)).map(c=>c.name).sort();};
  try{
- await require('./restored-themes-browser.cjs')({scenario,seed,state,out});
+ // Exercise the new visual regressions early; every scenario owns its context.
+ await require('./apple-mask-browser.cjs')({scenario,seed,state,out});
+ await require('./review-frame-browser.cjs')({scenario,seed,state,out});
  await require('./home-browser.cjs')({scenario,seed,state,out});
  await require('./theme-preview-browser.cjs')({scenario,seed,state,out});
+ await require('./pumpkin-mask-browser.cjs')({scenario,seed,state,out});
+ await require('./restored-themes-browser.cjs')({scenario,seed,state,out});
  await require('./visual-controls-browser.cjs')({scenario,seed,state,out});
  await require('./fall-source-browser.cjs')({scenario,seed,state,out});
  await require('./fall-fullscreen-browser.cjs')({scenario,seed,state,out});

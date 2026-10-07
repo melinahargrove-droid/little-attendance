@@ -1,4 +1,4 @@
-// Both theme previews use the recovered watercolor Bus icon, not the board.
+// Both preview locations retain their complete, theme-specific watercolor art.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {openAttendanceControls}=require('./navigation-helper.cjs');
 const PEER_ICONS=['pumpkin-patch.png','fall-leaves.png'].map(file=>'https://raw.githubusercontent.com/melinahargrove-droid/early-eagle-classroom/main/v6-test/assets/assets/attendance-themes/'+file);
@@ -21,6 +21,7 @@ function assertWholeBus(metrics){
  assert.ok(Math.abs(metrics.rendered.width/metrics.rendered.height-metrics.natural[0]/metrics.natural[1])<.001,'Original bus proportions are preserved');
 }
 module.exports=async({scenario,seed,state,out})=>{
+ await require('./restored-thumbnails-browser.cjs')({scenario,seed,state,out});
  await scenario('Current Theme School Bus preview is fully visible at computer sizes and native fullscreen',async(page,context)=>{
   for(const url of PEER_ICONS)await context.route(url,route=>route.continue());
   await seed(page,fixture('school-bus'));await page.locator('#classHotspot').click();const before=await state(page),proof=[];
